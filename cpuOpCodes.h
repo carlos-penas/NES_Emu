@@ -19,7 +19,7 @@ enum cpuOpCodes{
     ORA_ABS     = 0x0D,
     ASL_ABS     = 0x0E,
     //          = 0x0F,
-    BLP         = 0x10,
+    BPL         = 0x10,
     ORA_IY      = 0x11,
     //          = 0x12,
     //          = 0x13,

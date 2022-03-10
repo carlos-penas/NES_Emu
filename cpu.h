@@ -55,17 +55,33 @@ private:
     uint8_t lowByte(int data);
     uint8_t highByte(int data);
 
-    //Address modes
+    //Addressing modes
     int calculateZeroPageAddress(uint8_t ADL);
+    int calculateRelativeAddress(uint8_t Offset);
+
+    bool samePageAddresses(int add1, int add2);
 
     //Flags
     void set_N_Flag(bool set);
+    void set_V_Flag(bool set);
     void set_Z_Flag(bool set);
     void set_C_Flag(bool set);
+
+    bool N_FlagSet();
+    bool V_FlagSet();
+    bool Z_FlagSet();
+    bool C_FlagSet();
+
 
     //Stack
     void pushToStack(int data);
     void pushToStack(uint8_t HByte, uint8_t LByte);
+
+    int pullFromStack_2Bytes();
+    uint8_t pullFromStack_1Byte();
+
+    //Registers
+    void loadRegister(register8 *reg, uint8_t value);
 };
 
 #endif // CPU_H

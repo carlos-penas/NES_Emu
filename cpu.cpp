@@ -10,7 +10,7 @@ CPU::CPU()
     Y = 0;
 
     pc = 0xC000;
-    sp = 0xFD;      //Empieza en FB, habrá que leerse la docu.
+    sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
     P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1.
 
     HLT = false;
@@ -75,6 +75,23 @@ void CPU::executeInstruction()
     uint8_t opCode = currentInstruction.OpCode;
 
     switch (opCode){
+    case BPL:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(!N_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
+        break;
+    }
+    case CLC:
+    {
+        set_C_Flag(false);
+        break;
+    }
     case JSR:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -83,6 +100,20 @@ void CPU::executeInstruction()
         pushToStack(pc);
 
         pc = joinBytes(ADH,ADL);
+        break;
+    }
+    case BIT_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        set_N_Flag(value >> 7);
+        set_V_Flag((value & 0b01000000) >> 6);
+
+        value &= A;
+
+        set_Z_Flag(value == 0);
+
         break;
     }
     case SEC:
@@ -99,6 +130,43 @@ void CPU::executeInstruction()
 
         break;
     }
+    case BVC:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(!V_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
+        break;
+    }
+    case RTS:
+    {
+        pc = pullFromStack_2Bytes();
+        pc++;
+        break;
+    }
+    case BVS:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(V_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
+        break;
+    }
+    case STA_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        memory[address] = A;
+
+        break;
+    }
     case STX_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
@@ -106,19 +174,69 @@ void CPU::executeInstruction()
 
         break;
     }
+    case BCC:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(!C_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
+        break;
+    }
     case LDX_I:
     {
         uint8_t Oper = currentInstruction.Data1;
-        X = Oper;
+        loadRegister(&X,Oper);
+        break;
+    }
+    case LDA_I:
+    {
+        uint8_t Oper = currentInstruction.Data1;
+        loadRegister(&A,Oper);
+        break;
+    }
+    case BCS:
+    {
+        uint8_t offset = currentInstruction.Data1;
 
-        set_Z_Flag(X == 0);
-        set_N_Flag(X >> 7);
+        if(C_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
 
+            pc = newAddress;
+        }
+        break;
+    }
+    case BNE:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(!Z_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
         break;
     }
     case NOP:
     {
         //No operation
+        break;
+    }
+    case BEQ:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(Z_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
         break;
     }
     default:
@@ -142,9 +260,34 @@ CPUInstruction CPU::decodeInstruction()
     data2 = memory[pc+2];
 
     switch (opCode){
+    case BPL:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(N_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
+    }
+    case CLC:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     case JSR:
     {
         return CPUInstruction(opCode,data1,data2,6,true);
+    }
+    case BIT_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
     }
     case SEC:
     {
@@ -154,21 +297,131 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,3,true);
     }
+    case BVC:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(V_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
+    }
+    case RTS:
+    {
+        return CPUInstruction(opCode,6,true);
+    }
+    case BVS:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(!V_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
+    }
+    case STA_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case STX_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
+    }
+    case BCC:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(C_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
     }
     case LDX_I:
     {
         return CPUInstruction(opCode,data1,2,false);
     }
+    case LDA_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case BCS:
     {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(!C_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
 
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
+    }
+    case BNE:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(Z_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
     }
     case NOP:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case BEQ:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(!Z_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
     }
     default:
         notImplementedInstruction();
@@ -204,12 +457,24 @@ uint8_t CPU::lowByte(int data)
 
 uint8_t CPU::highByte(int data)
 {
-    return  (uint8_t) (data >> 4);
+    return  (uint8_t) (data >> 8);
 }
 
 int CPU::calculateZeroPageAddress(uint8_t ADL)
 {
     return joinBytes(0x00,ADL);
+}
+
+int CPU::calculateRelativeAddress(uint8_t Offset)
+{
+    int8_t signedOffset = (int8_t) Offset;
+
+    return pc + signedOffset;
+}
+
+bool CPU::samePageAddresses(int add1, int add2)
+{
+    return (highByte(add1) == highByte(add2));
 }
 
 void CPU::set_N_Flag(bool set)
@@ -218,6 +483,14 @@ void CPU::set_N_Flag(bool set)
         P |= 0b10000000;
     else
         P &= 0b01111111;
+}
+
+void CPU::set_V_Flag(bool set)
+{
+    if(set)
+        P |= 0b01000000;
+    else
+        P &= 0b10111111;
 }
 
 void CPU::set_Z_Flag(bool set)
@@ -236,15 +509,59 @@ void CPU::set_C_Flag(bool set)
         P &= 0b11111110;
 }
 
+bool CPU::N_FlagSet()
+{
+    return (P & 0b10000000);
+}
+
+bool CPU::V_FlagSet()
+{
+    return (P & 0b01000000);
+}
+
+bool CPU::Z_FlagSet()
+{
+    return (P & 0b00000010);
+}
+
+bool CPU::C_FlagSet()
+{
+    return (P & 0b00000001);
+}
+
 void CPU::pushToStack(int data)
 {
     pushToStack(highByte(data),lowByte(data));
 }
 
-void CPU::pushToStack(uint8_t HByte, uint8_t LByte)
+void CPU::pushToStack(uint8_t HByte, uint8_t LByte) //CUIDAO: El stack pointer es de 8 bits. Y lo estoy metiendo a una dirección de 16. Igual hay que concatenarle algo.
+                            //Y ADEMÁS. Siempre que estoy utilizando ints con signo para acceder a memory[] igual la estoy liando porque si es dirección de memoria alta saldrá  memory[-46].
 {
     memory[sp]     = HByte;
     memory[sp - 1] = LByte;
 
     sp -= 2;
+}
+
+int CPU::pullFromStack_2Bytes()
+{
+    uint8_t LByte = pullFromStack_1Byte();
+    uint8_t HByte = pullFromStack_1Byte();
+
+    return joinBytes(HByte,LByte);
+
+}
+
+uint8_t CPU::pullFromStack_1Byte()
+{
+    sp +=1;
+    return memory[sp];
+}
+
+void CPU::loadRegister(register8 *Reg, uint8_t value)
+{
+    *Reg = value;
+
+    set_Z_Flag(*Reg == 0);
+    set_N_Flag(*Reg >> 7);
 }
