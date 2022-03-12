@@ -64,18 +64,23 @@ private:
     //Flags
     void set_N_Flag(bool set);
     void set_V_Flag(bool set);
+    void set_D_Flag(bool set);
+    void set_I_Flag(bool set);
     void set_Z_Flag(bool set);
     void set_C_Flag(bool set);
 
     bool N_FlagSet();
     bool V_FlagSet();
+    bool D_FlagSet();
+    bool I_FlagSet();
     bool Z_FlagSet();
     bool C_FlagSet();
 
 
     //Stack
-    void pushToStack(int data);
-    void pushToStack(uint8_t HByte, uint8_t LByte);
+    void pushToStack_2Bytes(int data);
+    void pushToStack_2Bytes(uint8_t HByte, uint8_t LByte);
+    void pushToStack_1Byte(uint8_t data);
 
     int pullFromStack_2Bytes();
     uint8_t pullFromStack_1Byte();

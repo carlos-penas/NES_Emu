@@ -75,6 +75,11 @@ void CPU::executeInstruction()
     uint8_t opCode = currentInstruction.OpCode;
 
     switch (opCode){
+    case PHP:
+    {
+        pushToStack_1Byte(P);
+        break;
+    }
     case BPL:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -97,7 +102,7 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint8_t ADH = currentInstruction.Data2;
 
-        pushToStack(pc);
+        pushToStack_2Bytes(pc);
 
         pc = joinBytes(ADH,ADL);
         break;
@@ -114,6 +119,14 @@ void CPU::executeInstruction()
 
         set_Z_Flag(value == 0);
 
+        break;
+    }
+    case AND_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = A & value;
+
+        loadRegister(&A,result);
         break;
     }
     case SEC:
@@ -145,7 +158,13 @@ void CPU::executeInstruction()
     case RTS:
     {
         pc = pullFromStack_2Bytes();
-        pc++;
+        pc +=3; //3 bytes to advance the previous JSR instruction
+        break;
+    }
+    case PLA:
+    {
+        uint8_t value = pullFromStack_1Byte();
+        loadRegister(&A,value);
         break;
     }
     case BVS:
@@ -159,6 +178,11 @@ void CPU::executeInstruction()
             pc = newAddress;
         }
         break;
+    }
+    case SEI:
+    {
+        set_I_Flag(true);
+        return;
     }
     case STA_ZP:
     {
@@ -239,6 +263,11 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case SED:
+    {
+        set_D_Flag(true);
+        break;
+    }
     default:
         notImplementedInstruction();
     }
@@ -260,6 +289,10 @@ CPUInstruction CPU::decodeInstruction()
     data2 = memory[pc+2];
 
     switch (opCode){
+    case PHP:
+    {
+        return CPUInstruction(opCode,3,false);
+    }
     case BPL:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -288,6 +321,10 @@ CPUInstruction CPU::decodeInstruction()
     case BIT_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
+    }
+    case AND_I:
+    {
+        return  CPUInstruction(opCode,data1,2,false);
     }
     case SEC:
     {
@@ -318,6 +355,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,6,true);
     }
+    case PLA:
+    {
+        return CPUInstruction(opCode,4,false);
+    }
     case BVS:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -334,6 +375,10 @@ CPUInstruction CPU::decodeInstruction()
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
+    }
+    case SEI:
+    {
+        return  CPUInstruction(opCode,2,false);
     }
     case STA_ZP:
     {
@@ -423,6 +468,10 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case SED:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     default:
         notImplementedInstruction();
         return CPUInstruction();
@@ -452,7 +501,7 @@ int CPU::joinBytes(uint8_t msB, uint8_t lsB)
 
 uint8_t CPU::lowByte(int data)
 {
-    return (uint8_t) (data & 0x0F);
+    return (uint8_t) (data & 0xFF);
 }
 
 uint8_t CPU::highByte(int data)
@@ -493,6 +542,22 @@ void CPU::set_V_Flag(bool set)
         P &= 0b10111111;
 }
 
+void CPU::set_D_Flag(bool set)
+{
+    if(set)
+        P |= 0b00001000;
+    else
+        P &= 0b11110111;
+}
+
+void CPU::set_I_Flag(bool set)
+{
+    if(set)
+        P |= 0b00000100;
+    else
+        P &= 0b11111011;
+}
+
 void CPU::set_Z_Flag(bool set)
 {
     if(set)
@@ -519,6 +584,16 @@ bool CPU::V_FlagSet()
     return (P & 0b01000000);
 }
 
+bool CPU::D_FlagSet()
+{
+    return (P & 0b00001000);
+}
+
+bool CPU::I_FlagSet()
+{
+    return (P & 0b00000100);
+}
+
 bool CPU::Z_FlagSet()
 {
     return (P & 0b00000010);
@@ -529,18 +604,23 @@ bool CPU::C_FlagSet()
     return (P & 0b00000001);
 }
 
-void CPU::pushToStack(int data)
+void CPU::pushToStack_2Bytes(int data)
 {
-    pushToStack(highByte(data),lowByte(data));
+    pushToStack_2Bytes(highByte(data),lowByte(data));
 }
 
-void CPU::pushToStack(uint8_t HByte, uint8_t LByte) //CUIDAO: El stack pointer es de 8 bits. Y lo estoy metiendo a una dirección de 16. Igual hay que concatenarle algo.
+void CPU::pushToStack_2Bytes(uint8_t HByte, uint8_t LByte) //CUIDAO: El stack pointer es de 8 bits. Y lo estoy metiendo a una dirección de 16. Igual hay que concatenarle algo.
                             //Y ADEMÁS. Siempre que estoy utilizando ints con signo para acceder a memory[] igual la estoy liando porque si es dirección de memoria alta saldrá  memory[-46].
 {
-    memory[sp]     = HByte;
-    memory[sp - 1] = LByte;
+    pushToStack_1Byte(HByte);
+    pushToStack_1Byte(LByte);
+}
 
-    sp -= 2;
+void CPU::pushToStack_1Byte(uint8_t data)
+{
+    memory[sp] = data;
+
+    sp--;
 }
 
 int CPU::pullFromStack_2Bytes()
