@@ -80,6 +80,14 @@ void CPU::executeInstruction()
         pushToStack_1Byte(P);
         break;
     }
+    case ORA_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = A | value;
+
+        loadRegister(&A,result);
+        break;
+    }
     case BPL:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -121,6 +129,11 @@ void CPU::executeInstruction()
 
         break;
     }
+    case PLP:
+    {
+        P = pullFromStack_1Byte();
+        break;
+    }
     case AND_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -129,9 +142,34 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case BMI:
+    {
+        uint8_t offset = currentInstruction.Data1;
+
+        if(N_FlagSet())
+        {
+            int newAddress = calculateRelativeAddress(offset);
+
+            pc = newAddress;
+        }
+        break;
+    }
     case SEC:
     {
         set_C_Flag(true);
+        break;
+    }
+    case PHA:
+    {
+        pushToStack_1Byte(A);
+        break;
+    }
+    case EOR_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = A ^ value;
+
+        loadRegister(&A,result);
         break;
     }
     case JMP_ABS:
@@ -167,6 +205,11 @@ void CPU::executeInstruction()
         loadRegister(&A,value);
         break;
     }
+    case ADC_I:
+    {
+        //AQUI
+        break;
+    }
     case BVS:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -182,7 +225,7 @@ void CPU::executeInstruction()
     case SEI:
     {
         set_I_Flag(true);
-        return;
+        break;
     }
     case STA_ZP:
     {
@@ -234,6 +277,22 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case CLV:
+    {
+        set_V_Flag(false);
+        break;
+    }
+    case CMP_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = A - value;
+
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+
+        break;
+    }
     case BNE:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -244,6 +303,11 @@ void CPU::executeInstruction()
 
             pc = newAddress;
         }
+        break;
+    }
+    case CLD:
+    {
+        set_D_Flag(false);
         break;
     }
     case NOP:
@@ -293,6 +357,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,3,false);
     }
+    case ORA_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case BPL:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -322,13 +390,42 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,3,false);
     }
+    case PLP:
+    {
+        return CPUInstruction(opCode,4,false);
+    }
     case AND_I:
     {
         return  CPUInstruction(opCode,data1,2,false);
     }
+    case BMI:
+    {
+        //If no branch occurs, the instruction only takes 2 cycles
+        if(!N_FlagSet())
+        {
+            return  CPUInstruction(opCode,data1,2,false);
+        }
+
+        int newAddress = calculateRelativeAddress(data1);
+
+        if(samePageAddresses(pc,newAddress))
+            //If the branch occurs to the same page, the instruction takes 3 cycles
+            return CPUInstruction(opCode,data1,3,false);
+        else
+            //If the branch occurs to another page, the instruction takes 4 cycles
+            return CPUInstruction(opCode,data1,4,false);
+    }
     case SEC:
     {
         return  CPUInstruction(opCode,2,false);
+    }
+    case PHA:
+    {
+        return CPUInstruction(opCode,3,false);
+    }
+    case EOR_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
     }
     case JMP_ABS:
     {
@@ -358,6 +455,10 @@ CPUInstruction CPU::decodeInstruction()
     case PLA:
     {
         return CPUInstruction(opCode,4,false);
+    }
+    case ADC_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
     }
     case BVS:
     {
@@ -430,6 +531,14 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case CLV:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case CMP_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case BNE:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -446,6 +555,10 @@ CPUInstruction CPU::decodeInstruction()
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
+    }
+    case CLD:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case NOP:
     {
