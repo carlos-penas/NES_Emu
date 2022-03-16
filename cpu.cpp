@@ -11,7 +11,7 @@ CPU::CPU()
 
     pc = 0xC000;
     sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
-    P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1.
+    P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
 
     HLT = false;
 
@@ -44,7 +44,7 @@ void CPU::loadProgram(unsigned char *program, int size)
 
 void CPU::executeCycle()
 {
-    //The instruction is decoded only on its first cycle;
+    //The instruction is decoded only on its first cycle
     if(!currentInstruction.IsDecoded)
     {
         currentInstruction = decodeInstruction();
@@ -55,7 +55,7 @@ void CPU::executeCycle()
     currentInstruction.Cycles--;
     totalCycles++;
 
-    //Once we have simulated all the instruction cycles, we execute the instruction
+    //Once we have simulated all the instruction cycles, we execute the whole instruction in the last cycle
     if(currentInstruction.Cycles == 0)
     {
         executeInstruction();
@@ -77,7 +77,9 @@ void CPU::executeInstruction()
     switch (opCode){
     case PHP:
     {
-        pushToStack_1Byte(P);
+        //Bit 4 doesn't exist on the status register, only when it is pushed to the stack.  Ref: https://www.nesdev.org/wiki/Status_flags
+        uint8_t statusRegister = (P | 0b00010000);          //Bit4 = 1
+        pushToStack_1Byte(statusRegister);
         break;
     }
     case ORA_I:
@@ -131,7 +133,10 @@ void CPU::executeInstruction()
     }
     case PLP:
     {
-        P = pullFromStack_1Byte();
+        //Bit 4 doesn't exist on the status register, only when it is pushed to the stack. Bit 5 is always high.  Ref: https://www.nesdev.org/wiki/Status_flags
+        uint8_t statusRegister = (pullFromStack_1Byte() & 0b11101111);  //Bit4 = 0
+        statusRegister |= 0b00100000;                                   //Bit5 = 1
+        P = statusRegister;
         break;
     }
     case AND_I:
