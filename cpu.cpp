@@ -212,7 +212,15 @@ void CPU::executeInstruction()
     }
     case ADC_I:
     {
-        //AQUI
+        uint8_t operand = currentInstruction.Data1;
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+
+        //Hay que probar esto.
         break;
     }
     case BVS:
@@ -720,6 +728,23 @@ bool CPU::Z_FlagSet()
 bool CPU::C_FlagSet()
 {
     return (P & 0b00000001);
+}
+
+bool CPU::operationHasOverflow(uint8_t a, uint8_t b, uint8_t result)
+{
+    uint8_t signA = (a >> 7);
+    uint8_t signOperand = (b >> 7);
+    uint8_t signResult = (result >> 7);
+
+    if (signA != signOperand)
+    {
+        return false;
+    }
+    else if (signResult != signA)
+    {
+        return true;
+    }
+    else return false;
 }
 
 void CPU::pushToStack_2Bytes(int data)

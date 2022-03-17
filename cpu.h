@@ -76,6 +76,8 @@ private:
     bool Z_FlagSet();
     bool C_FlagSet();
 
+    bool operationHasOverflow(uint8_t a, uint8_t b, uint8_t result);
+
 
     //Stack
     void pushToStack_2Bytes(int data);
