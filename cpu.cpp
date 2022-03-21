@@ -220,7 +220,6 @@ void CPU::executeInstruction()
 
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
 
-        //Hay que probar esto.
         break;
     }
     case BVS:
@@ -254,6 +253,17 @@ void CPU::executeInstruction()
 
         break;
     }
+    case DEY:
+    {
+        uint8_t result = Y-1;
+        loadRegister(&Y,result);
+        break;
+    }
+    case TXA:
+    {
+        loadRegister(&A,X);
+        break;
+    }
     case BCC:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -266,16 +276,37 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case TYA:
+    {
+        loadRegister(&A,Y);
+        break;
+    }
+    case LDY_I:
+    {
+        uint8_t Oper = currentInstruction.Data1;
+        loadRegister(&Y,Oper);
+        break;
+    }
     case LDX_I:
     {
         uint8_t Oper = currentInstruction.Data1;
         loadRegister(&X,Oper);
         break;
     }
+    case TAY:
+    {
+        loadRegister(&Y,A);
+        break;
+    }
     case LDA_I:
     {
         uint8_t Oper = currentInstruction.Data1;
         loadRegister(&A,Oper);
+        break;
+    }
+    case TAX:
+    {
+        loadRegister(&X,A);
         break;
     }
     case BCS:
@@ -295,6 +326,28 @@ void CPU::executeInstruction()
         set_V_Flag(false);
         break;
     }
+    case TSX:
+    {
+        loadRegister(&X,sp);
+        break;
+    }
+    case CPY_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = Y - value;
+
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(Y >= value);
+
+        break;
+    }
+    case INY:
+    {
+        uint8_t result = Y+1;
+        loadRegister(&Y,result);
+        break;
+    }
     case CMP_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -304,6 +357,12 @@ void CPU::executeInstruction()
         set_N_Flag(result >> 7);
         set_C_Flag(value <= A);
 
+        break;
+    }
+    case DEX:
+    {
+        uint8_t result = X-1;
+        loadRegister(&X,result);
         break;
     }
     case BNE:
@@ -321,6 +380,35 @@ void CPU::executeInstruction()
     case CLD:
     {
         set_D_Flag(false);
+        break;
+    }
+    case CPX_I:
+    {
+        uint8_t value = currentInstruction.Data1;
+        uint8_t result = X - value;
+
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(X >= value);
+
+        break;
+    }
+    case INX:
+    {
+        uint8_t result = X+1;
+        loadRegister(&X,result);
+        break;
+    }
+    case SBC_I:
+    {
+        uint8_t operand = ~currentInstruction.Data1;
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+
         break;
     }
     case NOP:
@@ -352,7 +440,7 @@ void CPU::executeInstruction()
 
 void CPU::notImplementedInstruction()
 {
-    printf("INSTRUCTION NOT IMPLEMENTED: %02x\n\n", memory[pc]);
+    printf("INSTRUCTION NOT IMPLEMENTED: %02X\n\n", memory[pc]);
     HLT = true;
 }
 
@@ -502,6 +590,14 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,3,false);
     }
+    case DEY:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case TXA:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     case BCC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -519,13 +615,29 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case TYA:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case LDY_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case LDX_I:
     {
         return CPUInstruction(opCode,data1,2,false);
     }
+    case TAY:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     case LDA_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case TAX:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case BCS:
     {
@@ -548,9 +660,25 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case TSX:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case CPY_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
+    case INY:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     case CMP_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case DEX:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case BNE:
     {
@@ -572,6 +700,18 @@ CPUInstruction CPU::decodeInstruction()
     case CLD:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case CPX_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
+    }
+    case INX:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case SBC_I:
+    {
+        return CPUInstruction(opCode,data1,2,false);
     }
     case NOP:
     {
