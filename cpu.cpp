@@ -112,6 +112,8 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint8_t ADH = currentInstruction.Data2;
 
+        pc +=2;
+
         pushToStack_2Bytes(pc);
 
         pc = joinBytes(ADH,ADL);
@@ -164,6 +166,13 @@ void CPU::executeInstruction()
         set_C_Flag(true);
         break;
     }
+    case RTI:
+    {
+        P = pullFromStack_1Byte();
+        pc = pullFromStack_2Bytes();
+
+        break;
+    }
     case PHA:
     {
         pushToStack_1Byte(A);
@@ -201,7 +210,9 @@ void CPU::executeInstruction()
     case RTS:
     {
         pc = pullFromStack_2Bytes();
-        pc +=3; //3 bytes to advance the previous JSR instruction
+
+        pc++;
+
         break;
     }
     case PLA:
@@ -264,6 +275,15 @@ void CPU::executeInstruction()
         loadRegister(&A,X);
         break;
     }
+    case STX_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        memory[joinBytes(ADH,ADL)] = X;
+
+        break;
+    }
     case BCC:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -279,6 +299,11 @@ void CPU::executeInstruction()
     case TYA:
     {
         loadRegister(&A,Y);
+        break;
+    }
+    case TXS:
+    {
+        sp = X;
         break;
     }
     case LDY_I:
@@ -307,6 +332,26 @@ void CPU::executeInstruction()
     case TAX:
     {
         loadRegister(&X,A);
+        break;
+    }
+    case LDA_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        loadRegister(&A,value);
+        break;
+    }
+    case LDX_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        loadRegister(&X,value);
         break;
     }
     case BCS:
@@ -520,6 +565,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return  CPUInstruction(opCode,2,false);
     }
+    case RTI:
+    {
+        return CPUInstruction(opCode,6,true);
+    }
     case PHA:
     {
         return CPUInstruction(opCode,3,false);
@@ -598,6 +647,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case STX_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
     case BCC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -616,6 +669,10 @@ CPUInstruction CPU::decodeInstruction()
             return CPUInstruction(opCode,data1,4,false);
     }
     case TYA:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
+    case TXS:
     {
         return CPUInstruction(opCode,2,false);
     }
@@ -638,6 +695,14 @@ CPUInstruction CPU::decodeInstruction()
     case TAX:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case LDA_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case LDX_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
     }
     case BCS:
     {
@@ -892,7 +957,7 @@ void CPU::pushToStack_2Bytes(int data)
     pushToStack_2Bytes(highByte(data),lowByte(data));
 }
 
-void CPU::pushToStack_2Bytes(uint8_t HByte, uint8_t LByte) //CUIDAO: El stack pointer es de 8 bits. Y lo estoy metiendo a una dirección de 16. Igual hay que concatenarle algo.
+void CPU::pushToStack_2Bytes(uint8_t HByte, uint8_t LByte)
                             //Y ADEMÁS. Siempre que estoy utilizando ints con signo para acceder a memory[] igual la estoy liando porque si es dirección de memoria alta saldrá  memory[-46].
 {
     pushToStack_1Byte(HByte);
@@ -901,7 +966,7 @@ void CPU::pushToStack_2Bytes(uint8_t HByte, uint8_t LByte) //CUIDAO: El stack po
 
 void CPU::pushToStack_1Byte(uint8_t data)
 {
-    memory[sp] = data;
+    memory[joinBytes(0x01,sp)] = data;
 
     sp--;
 }
@@ -918,7 +983,7 @@ int CPU::pullFromStack_2Bytes()
 uint8_t CPU::pullFromStack_1Byte()
 {
     sp +=1;
-    return memory[sp];
+    return memory[joinBytes(0x01,sp)];
 }
 
 void CPU::loadRegister(register8 *Reg, uint8_t value)
