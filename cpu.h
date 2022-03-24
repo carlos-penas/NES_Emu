@@ -58,6 +58,7 @@ private:
     //Addressing modes
     int calculateZeroPageAddress(uint8_t ADL);
     int calculateRelativeAddress(uint8_t Offset);
+    uint16_t indirectIndexedAddress(uint8_t ZP_ADL, register8 *index);
 
     bool samePageAddresses(int add1, int add2);
 
@@ -89,6 +90,10 @@ private:
 
     //Registers
     void loadRegister(register8 *reg, uint8_t value);
+
+    //Memory
+    void storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL);
+    void storeValueInMemory(uint8_t value, uint16_t address);
 };
 
 #endif // CPU_H

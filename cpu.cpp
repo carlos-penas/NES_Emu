@@ -82,12 +82,31 @@ void CPU::executeInstruction()
         pushToStack_1Byte(statusRegister);
         break;
     }
+    case ORA_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
+
+        break;
+    }
     case ORA_I:
     {
         uint8_t value = currentInstruction.Data1;
-        uint8_t result = A | value;
 
+        uint8_t result = A | value;
         loadRegister(&A,result);
+        break;
+    }
+    case ASL_A:
+    {
+        set_C_Flag(A & 0b10000000);
+        uint8_t shiftedValue = A << 1;
+
+        loadRegister(&A,shiftedValue);
         break;
     }
     case BPL:
@@ -119,6 +138,16 @@ void CPU::executeInstruction()
         pc = joinBytes(ADH,ADL);
         break;
     }
+    case AND_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
+        break;
+    }
     case BIT_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
@@ -144,9 +173,17 @@ void CPU::executeInstruction()
     case AND_I:
     {
         uint8_t value = currentInstruction.Data1;
-        uint8_t result = A & value;
 
+        uint8_t result = A & value;
         loadRegister(&A,result);
+        break;
+    }
+    case ROL_A:
+    {
+        uint8_t shiftedValue = (A << 1) | C_FlagSet();
+        set_C_Flag(A & 0b10000000);
+
+        loadRegister(&A,shiftedValue);
         break;
     }
     case BMI:
@@ -168,9 +205,22 @@ void CPU::executeInstruction()
     }
     case RTI:
     {
-        P = pullFromStack_1Byte();
+        //Bit 4 doesn't exist on the status register, only when it is pushed to the stack. Bit 5 is always high.  Ref: https://www.nesdev.org/wiki/Status_flags
+        uint8_t statusRegister = (pullFromStack_1Byte() & 0b11101111);  //Bit4 = 0
+        statusRegister |= 0b00100000;                                   //Bit5 = 1
+        P = statusRegister;
         pc = pullFromStack_2Bytes();
 
+        break;
+    }
+    case EOR_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
         break;
     }
     case PHA:
@@ -181,9 +231,16 @@ void CPU::executeInstruction()
     case EOR_I:
     {
         uint8_t value = currentInstruction.Data1;
-        uint8_t result = A ^ value;
 
+        uint8_t result = A ^ value;
         loadRegister(&A,result);
+        break;
+    }
+    case LSR_A:
+    {
+        set_C_Flag(A & 0b00000001);
+        uint8_t shiftedValue = (A >> 1);
+        loadRegister(&A,shiftedValue);
         break;
     }
     case JMP_ABS:
@@ -215,6 +272,20 @@ void CPU::executeInstruction()
 
         break;
     }
+    case ADC_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t operand = memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
     case PLA:
     {
         uint8_t value = pullFromStack_1Byte();
@@ -230,7 +301,15 @@ void CPU::executeInstruction()
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
+    case ROR_A:
+    {
+        uint8_t C = C_FlagSet();
+        uint8_t shiftedValue = (A >> 1) | (C << 7);
+        set_C_Flag(A & 0b00000001);
 
+        loadRegister(&A,shiftedValue);
         break;
     }
     case BVS:
@@ -250,18 +329,23 @@ void CPU::executeInstruction()
         set_I_Flag(true);
         break;
     }
+    case STA_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        storeValueInMemory(A,address);
+        break;
+    }
     case STA_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
-        memory[address] = A;
-
+        storeValueInMemory(A,address);
         break;
     }
     case STX_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
-        memory[address] = X;
-
+        storeValueInMemory(X,address);
         break;
     }
     case DEY:
@@ -275,13 +359,20 @@ void CPU::executeInstruction()
         loadRegister(&A,X);
         break;
     }
+    case STA_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        storeValueInMemory(A,ADH,ADL);
+        break;
+    }
     case STX_ABS:
     {
         uint8_t ADL = currentInstruction.Data1;
         uint8_t ADH = currentInstruction.Data2;
 
-        memory[joinBytes(ADH,ADL)] = X;
-
+        storeValueInMemory(X,ADH,ADL);
         break;
     }
     case BCC:
@@ -312,10 +403,26 @@ void CPU::executeInstruction()
         loadRegister(&Y,Oper);
         break;
     }
+    case LDA_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+
+        loadRegister(&A,memory[address]);
+        break;
+    }
     case LDX_I:
     {
         uint8_t Oper = currentInstruction.Data1;
         loadRegister(&X,Oper);
+        break;
+    }
+    case LDA_ZP:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = calculateZeroPageAddress(ADL);
+
+        loadRegister(&A,memory[address]);
         break;
     }
     case TAY:
@@ -387,6 +494,18 @@ void CPU::executeInstruction()
 
         break;
     }
+    case CMP_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+        break;
+    }
     case INY:
     {
         uint8_t result = Y+1;
@@ -401,7 +520,6 @@ void CPU::executeInstruction()
         set_Z_Flag(result == 0);
         set_N_Flag(result >> 7);
         set_C_Flag(value <= A);
-
         break;
     }
     case DEX:
@@ -503,9 +621,17 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,3,false);
     }
+    case ORA_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case ORA_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case ASL_A:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case BPL:
     {
@@ -517,7 +643,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -532,6 +658,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,6,true);
     }
+    case AND_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case BIT_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
@@ -544,6 +674,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return  CPUInstruction(opCode,data1,2,false);
     }
+    case ROL_A:
+    {
+        return CPUInstruction(opCode,2,false);
+    }
     case BMI:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -554,7 +688,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -569,6 +703,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,6,true);
     }
+    case EOR_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case PHA:
     {
         return CPUInstruction(opCode,3,false);
@@ -576,6 +714,10 @@ CPUInstruction CPU::decodeInstruction()
     case EOR_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case LSR_A:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case JMP_ABS:
     {
@@ -591,7 +733,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -602,6 +744,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,6,true);
     }
+    case ADC_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case PLA:
     {
         return CPUInstruction(opCode,4,false);
@@ -609,6 +755,10 @@ CPUInstruction CPU::decodeInstruction()
     case ADC_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case ROR_A:
+    {
+        return CPUInstruction(opCode,2,false);
     }
     case BVS:
     {
@@ -620,7 +770,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -630,6 +780,10 @@ CPUInstruction CPU::decodeInstruction()
     case SEI:
     {
         return  CPUInstruction(opCode,2,false);
+    }
+    case STA_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
     }
     case STA_ZP:
     {
@@ -647,6 +801,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case STA_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
     case STX_ABS:
     {
         return CPUInstruction(opCode,data1,data2,4,false);
@@ -661,7 +819,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -680,9 +838,17 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,2,false);
     }
+    case LDA_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case LDX_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case LDA_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
     }
     case TAY:
     {
@@ -714,7 +880,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -732,6 +898,10 @@ CPUInstruction CPU::decodeInstruction()
     case CPY_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case CMP_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
     }
     case INY:
     {
@@ -755,7 +925,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -792,7 +962,7 @@ CPUInstruction CPU::decodeInstruction()
 
         int newAddress = calculateRelativeAddress(data1);
 
-        if(samePageAddresses(pc,newAddress))
+        if(samePageAddresses(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
             return CPUInstruction(opCode,data1,3,false);
         else
@@ -850,6 +1020,16 @@ int CPU::calculateRelativeAddress(uint8_t Offset)
     int8_t signedOffset = (int8_t) Offset;
 
     return pc + signedOffset;
+}
+
+uint16_t CPU::indirectIndexedAddress(uint8_t zp_ADL, register8 *index)
+{
+    uint16_t zp_Address1 = calculateZeroPageAddress(zp_ADL + *index);
+    uint16_t zp_Address2 = calculateZeroPageAddress(zp_ADL + *index + 1);
+    uint8_t ADL = memory[zp_Address1];
+    uint8_t ADH = memory[zp_Address2];
+
+    return joinBytes(ADH,ADL);
 }
 
 bool CPU::samePageAddresses(int add1, int add2)
@@ -992,4 +1172,14 @@ void CPU::loadRegister(register8 *Reg, uint8_t value)
 
     set_Z_Flag(*Reg == 0);
     set_N_Flag(*Reg >> 7);
+}
+
+void CPU::storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL)
+{
+    storeValueInMemory(value,joinBytes(ADH,ADL));
+}
+
+void CPU::storeValueInMemory(uint8_t value, uint16_t address)
+{
+    memory[address] = value;
 }
