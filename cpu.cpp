@@ -93,6 +93,15 @@ void CPU::executeInstruction()
 
         break;
     }
+    case ORA_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
+        break;
+    }
     case ORA_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -162,6 +171,15 @@ void CPU::executeInstruction()
 
         break;
     }
+      case AND_ZP:
+      {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
+        break;
+      }
     case PLP:
     {
         //Bit 4 doesn't exist on the status register, only when it is pushed to the stack. Bit 5 is always high.  Ref: https://www.nesdev.org/wiki/Status_flags
@@ -217,6 +235,15 @@ void CPU::executeInstruction()
     {
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
+        break;
+    }
+    case EOR_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
         uint8_t value = memory[address];
 
         uint8_t result = A ^ value;
@@ -286,6 +313,19 @@ void CPU::executeInstruction()
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
         break;
     }
+    case ADC_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t operand = memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
     case PLA:
     {
         uint8_t value = pullFromStack_1Byte();
@@ -334,6 +374,12 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = indirectIndexedAddress(ADL,&X);
         storeValueInMemory(A,address);
+        break;
+    }
+    case STY_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        storeValueInMemory(Y,address);
         break;
     }
     case STA_ZP:
@@ -417,12 +463,28 @@ void CPU::executeInstruction()
         loadRegister(&X,Oper);
         break;
     }
+    case LDY_ZP:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = calculateZeroPageAddress(ADL);
+
+        loadRegister(&Y,memory[address]);
+        break;
+    }
     case LDA_ZP:
     {
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = calculateZeroPageAddress(ADL);
 
         loadRegister(&A,memory[address]);
+        break;
+    }
+    case LDX_ZP:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = calculateZeroPageAddress(ADL);
+
+        loadRegister(&X,memory[address]);
         break;
     }
     case TAY:
@@ -506,6 +568,17 @@ void CPU::executeInstruction()
         set_C_Flag(value <= A);
         break;
     }
+    case CMP_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+        break;
+    }
     case INY:
     {
         uint8_t result = Y+1;
@@ -556,6 +629,31 @@ void CPU::executeInstruction()
 
         break;
     }
+    case SBC_IX:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint8_t operand = ~memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
+    case SBC_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t operand = ~memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
     case INX:
     {
         uint8_t result = X+1;
@@ -565,13 +663,12 @@ void CPU::executeInstruction()
     case SBC_I:
     {
         uint8_t operand = ~currentInstruction.Data1;
-        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
 
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
         set_C_Flag(result > 0xFF);
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);
-
         break;
     }
     case NOP:
@@ -625,6 +722,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case ORA_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case ORA_I:
     {
         return CPUInstruction(opCode,data1,2,false);
@@ -665,6 +766,10 @@ CPUInstruction CPU::decodeInstruction()
     case BIT_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
+    }
+    case AND_ZP:
+    {
+      return CPUInstruction(opCode,data1,3,false);
     }
     case PLP:
     {
@@ -707,6 +812,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case EOR_ZP:
+    {
+      return CPUInstruction(opCode,data1,3,false);
+    }
     case PHA:
     {
         return CPUInstruction(opCode,3,false);
@@ -748,6 +857,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case ADC_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case PLA:
     {
         return CPUInstruction(opCode,4,false);
@@ -784,6 +897,10 @@ CPUInstruction CPU::decodeInstruction()
     case STA_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case STY_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
     }
     case STA_ZP:
     {
@@ -846,7 +963,15 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,2,false);
     }
+    case LDY_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case LDA_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
+    case LDX_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
     }
@@ -903,6 +1028,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case CMP_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case INY:
     {
         return CPUInstruction(opCode,2,false);
@@ -939,6 +1068,14 @@ CPUInstruction CPU::decodeInstruction()
     case CPX_I:
     {
         return CPUInstruction(opCode,data1,2,false);
+    }
+    case SBC_IX:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
+    case SBC_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
     }
     case INX:
     {
