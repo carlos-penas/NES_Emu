@@ -92,8 +92,8 @@ private:
     void loadRegister(register8 *reg, uint8_t value);
 
     //Memory
-    void storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL);
-    void storeValueInMemory(uint8_t value, uint16_t address);
+    void storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL, bool checkFlags);
+    void storeValueInMemory(uint8_t value, uint16_t address, bool checkFlags);
 };
 
 #endif // CPU_H

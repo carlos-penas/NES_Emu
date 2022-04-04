@@ -250,6 +250,17 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case LSR_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        set_C_Flag(value & 0b00000001);
+        uint8_t shiftedValue = (value >> 1);
+        storeValueInMemory(shiftedValue,address,true);
+
+        break;
+    }
     case PHA:
     {
         pushToStack_1Byte(A);
@@ -373,25 +384,25 @@ void CPU::executeInstruction()
     {
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = indirectIndexedAddress(ADL,&X);
-        storeValueInMemory(A,address);
+        storeValueInMemory(A,address,false);
         break;
     }
     case STY_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
-        storeValueInMemory(Y,address);
+        storeValueInMemory(Y,address,false);
         break;
     }
     case STA_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
-        storeValueInMemory(A,address);
+        storeValueInMemory(A,address,false);
         break;
     }
     case STX_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
-        storeValueInMemory(X,address);
+        storeValueInMemory(X,address,false);
         break;
     }
     case DEY:
@@ -410,7 +421,7 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint8_t ADH = currentInstruction.Data2;
 
-        storeValueInMemory(A,ADH,ADL);
+        storeValueInMemory(A,ADH,ADL,false);
         break;
     }
     case STX_ABS:
@@ -418,7 +429,7 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint8_t ADH = currentInstruction.Data2;
 
-        storeValueInMemory(X,ADH,ADL);
+        storeValueInMemory(X,ADH,ADL,false);
         break;
     }
     case BCC:
@@ -568,6 +579,17 @@ void CPU::executeInstruction()
         set_C_Flag(value <= A);
         break;
     }
+    case CPY_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t result = Y - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(Y >= value);
+        break;
+    }
     case CMP_ZP:
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
@@ -621,8 +643,8 @@ void CPU::executeInstruction()
     case CPX_I:
     {
         uint8_t value = currentInstruction.Data1;
-        uint8_t result = X - value;
 
+        uint8_t result = X - value;
         set_Z_Flag(result == 0);
         set_N_Flag(result >> 7);
         set_C_Flag(X >= value);
@@ -640,6 +662,17 @@ void CPU::executeInstruction()
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);
+        break;
+    }
+    case CPX_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t result = X - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(X >= value);
         break;
     }
     case SBC_ZP:
@@ -815,6 +848,10 @@ CPUInstruction CPU::decodeInstruction()
     case EOR_ZP:
     {
       return CPUInstruction(opCode,data1,3,false);
+    }
+    case LSR_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
     }
     case PHA:
     {
@@ -1028,6 +1065,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case CPY_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
+    }
     case CMP_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
@@ -1072,6 +1113,10 @@ CPUInstruction CPU::decodeInstruction()
     case SBC_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case CPX_ZP:
+    {
+        return CPUInstruction(opCode,data1,3,false);
     }
     case SBC_ZP:
     {
@@ -1311,12 +1356,18 @@ void CPU::loadRegister(register8 *Reg, uint8_t value)
     set_N_Flag(*Reg >> 7);
 }
 
-void CPU::storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL)
+void CPU::storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL, bool checkFlags)
 {
-    storeValueInMemory(value,joinBytes(ADH,ADL));
+    storeValueInMemory(value,joinBytes(ADH,ADL), checkFlags);
 }
 
-void CPU::storeValueInMemory(uint8_t value, uint16_t address)
+void CPU::storeValueInMemory(uint8_t value, uint16_t address, bool checkFlags)
 {
     memory[address] = value;
+
+    if(checkFlags)
+    {
+        set_Z_Flag(value == 0);
+        set_N_Flag(value >> 7);
+    }
 }
