@@ -102,6 +102,16 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case ASL_ZP:
+    {
+        int address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        set_C_Flag(A & 0b10000000);
+        uint8_t shiftedValue = (value << 1);
+        storeValueInMemory(shiftedValue,address,true);
+        break;
+    }
     case ORA_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -116,6 +126,16 @@ void CPU::executeInstruction()
         uint8_t shiftedValue = A << 1;
 
         loadRegister(&A,shiftedValue);
+        break;
+    }
+    case ORA_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
         break;
     }
     case BPL:
@@ -171,15 +191,26 @@ void CPU::executeInstruction()
 
         break;
     }
-      case AND_ZP:
-      {
+    case AND_ZP:
+    {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
         uint8_t value = memory[address];
 
         uint8_t result = A & value;
         loadRegister(&A,result);
         break;
-      }
+    }
+    case ROL_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t shiftedValue = (value << 1) | C_FlagSet();
+        set_C_Flag(value & 0b10000000);
+
+        storeValueInMemory(shiftedValue,address,true);
+        break;
+    }
     case PLP:
     {
         //Bit 4 doesn't exist on the status register, only when it is pushed to the stack. Bit 5 is always high.  Ref: https://www.nesdev.org/wiki/Status_flags
@@ -202,6 +233,30 @@ void CPU::executeInstruction()
         set_C_Flag(A & 0b10000000);
 
         loadRegister(&A,shiftedValue);
+        break;
+    }
+    case BIT_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        set_N_Flag(value >> 7);
+        set_V_Flag((value & 0b01000000) >> 6);
+
+        value &= A;
+
+        set_Z_Flag(value == 0);
+        break;
+    }
+    case AND_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
         break;
     }
     case BMI:
@@ -258,7 +313,6 @@ void CPU::executeInstruction()
         set_C_Flag(value & 0b00000001);
         uint8_t shiftedValue = (value >> 1);
         storeValueInMemory(shiftedValue,address,true);
-
         break;
     }
     case PHA:
@@ -288,6 +342,16 @@ void CPU::executeInstruction()
 
         pc = joinBytes(ADH,ADL);
 
+        break;
+    }
+    case EOR_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
         break;
     }
     case BVC:
@@ -335,6 +399,18 @@ void CPU::executeInstruction()
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
+    case ROR_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        uint8_t C = C_FlagSet();
+        uint8_t shiftedValue = (value >> 1) | (C << 7);
+        set_C_Flag(value & 0b00000001);
+
+        storeValueInMemory(shiftedValue,address,true);
         break;
     }
     case PLA:
@@ -414,6 +490,14 @@ void CPU::executeInstruction()
     case TXA:
     {
         loadRegister(&A,X);
+        break;
+    }
+    case STY_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        storeValueInMemory(Y,ADH,ADL,false);
         break;
     }
     case STA_ABS:
@@ -514,6 +598,16 @@ void CPU::executeInstruction()
         loadRegister(&X,A);
         break;
     }
+    case LDY_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        loadRegister(&Y,value);
+        break;
+    }
     case LDA_ABS:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -599,6 +693,14 @@ void CPU::executeInstruction()
         set_Z_Flag(result == 0);
         set_N_Flag(result >> 7);
         set_C_Flag(value <= A);
+        break;
+    }
+    case DEC_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        storeValueInMemory(value-1,address,true);
         break;
     }
     case INY:
@@ -687,6 +789,14 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case INC_ZP:
+    {
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t value = memory[address];
+
+        storeValueInMemory(value+1,address,true);
+        break;
+    }
     case INX:
     {
         uint8_t result = X+1;
@@ -759,6 +869,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,3,false);
     }
+    case ASL_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
+    }
     case ORA_I:
     {
         return CPUInstruction(opCode,data1,2,false);
@@ -766,6 +880,10 @@ CPUInstruction CPU::decodeInstruction()
     case ASL_A:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case ORA_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
     }
     case BPL:
     {
@@ -804,6 +922,10 @@ CPUInstruction CPU::decodeInstruction()
     {
       return CPUInstruction(opCode,data1,3,false);
     }
+    case ROL_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
+    }
     case PLP:
     {
         return CPUInstruction(opCode,4,false);
@@ -815,6 +937,14 @@ CPUInstruction CPU::decodeInstruction()
     case ROL_A:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case BIT_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case AND_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
     }
     case BMI:
     {
@@ -869,6 +999,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,3,true);
     }
+    case EOR_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
     case BVC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -897,6 +1031,10 @@ CPUInstruction CPU::decodeInstruction()
     case ADC_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
+    }
+    case ROR_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
     }
     case PLA:
     {
@@ -954,6 +1092,10 @@ CPUInstruction CPU::decodeInstruction()
     case TXA:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case STY_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
     }
     case STA_ABS:
     {
@@ -1024,6 +1166,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case LDY_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
     case LDA_ABS:
     {
         return CPUInstruction(opCode,data1,data2,4,false);
@@ -1073,6 +1219,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,3,false);
     }
+    case DEC_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
+    }
     case INY:
     {
         return CPUInstruction(opCode,2,false);
@@ -1121,6 +1271,10 @@ CPUInstruction CPU::decodeInstruction()
     case SBC_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
+    }
+    case INC_ZP:
+    {
+        return CPUInstruction(opCode,data1,5,false);
     }
     case INX:
     {
