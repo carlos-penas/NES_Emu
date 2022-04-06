@@ -138,6 +138,17 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case ASL_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        set_C_Flag(A & 0b10000000);
+        uint8_t shiftedValue = (value << 1);
+        storeValueInMemory(shiftedValue,ADH,ADL,true);
+        break;
+    }
     case BPL:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -259,6 +270,18 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case ROL_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t shiftedValue = (value << 1) | C_FlagSet();
+        set_C_Flag(value & 0b10000000);
+
+        storeValueInMemory(shiftedValue,ADH,ADL,true);
+        break;
+    }
     case BMI:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -354,6 +377,17 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case LSR_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        set_C_Flag(value & 0b00000001);
+        uint8_t shiftedValue = (value >> 1);
+        storeValueInMemory(shiftedValue,ADH,ADL,true);
+        break;
+    }
     case BVC:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -437,6 +471,33 @@ void CPU::executeInstruction()
         set_C_Flag(A & 0b00000001);
 
         loadRegister(&A,shiftedValue);
+        break;
+    }
+    case ADC_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t operand = memory[joinBytes(ADH,ADL)];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
+    case ROR_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t C = C_FlagSet();
+        uint8_t shiftedValue = (value >> 1) | (C << 7);
+        set_C_Flag(value & 0b00000001);
+
+        storeValueInMemory(shiftedValue,ADH,ADL,true);
         break;
     }
     case BVS:
@@ -640,6 +701,11 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case LDA_IY:
+    {
+        sadfg
+        break;
+    }
     case CLV:
     {
         set_V_Flag(false);
@@ -723,6 +789,39 @@ void CPU::executeInstruction()
     {
         uint8_t result = X-1;
         loadRegister(&X,result);
+        break;
+    }
+    case CPY_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = Y - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(Y >= value);
+        break;
+    }
+    case CMP_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+        break;
+    }
+    case DEC_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        storeValueInMemory(value-1,ADH,ADL,true);
         break;
     }
     case BNE:
@@ -819,6 +918,40 @@ void CPU::executeInstruction()
         //No operation
         break;
     }
+    case CPX_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        uint8_t result = X - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(X >= value);
+        break;
+    }
+    case SBC_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t operand = ~memory[joinBytes(ADH,ADL)];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
+    case INC_ABS:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        storeValueInMemory(value+1,ADH,ADL,true);
+        break;
+    }
     case BEQ:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -885,6 +1018,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,4,false);
     }
+    case ASL_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
+    }
     case BPL:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -946,6 +1083,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,4,false);
     }
+    case ROL_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
+    }
     case BMI:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -1003,6 +1144,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,4,false);
     }
+    case LSR_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
+    }
     case BVC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
@@ -1047,6 +1192,14 @@ CPUInstruction CPU::decodeInstruction()
     case ROR_A:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case ADC_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case ROR_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
     }
     case BVS:
     {
@@ -1195,6 +1348,10 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case LDA_IY:
+    {
+        adsf //Aquí me quedo, el decode cambia si se hace cambio de página
+    }
     case CLV:
     {
         return CPUInstruction(opCode,2,false);
@@ -1234,6 +1391,18 @@ CPUInstruction CPU::decodeInstruction()
     case DEX:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case CPY_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case CMP_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case DEC_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
     }
     case BNE:
     {
@@ -1287,6 +1456,18 @@ CPUInstruction CPU::decodeInstruction()
     case NOP:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case CPX_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case SBC_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case INC_ABS:
+    {
+        return CPUInstruction(opCode,data1,data2,6,false);
     }
     case BEQ:
     {
