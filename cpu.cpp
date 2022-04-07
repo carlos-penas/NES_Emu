@@ -85,12 +85,11 @@ void CPU::executeInstruction()
     case ORA_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t value = memory[address];
 
         uint8_t result = A | value;
         loadRegister(&A,result);
-
         break;
     }
     case ORA_ZP:
@@ -161,6 +160,27 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case ORA_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
+        break;
+    }
+    case ORA_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
+        break;
+    }
     case CLC:
     {
         set_C_Flag(false);
@@ -181,7 +201,7 @@ void CPU::executeInstruction()
     case AND_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t value = memory[address];
 
         uint8_t result = A & value;
@@ -294,9 +314,30 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case AND_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
+        break;
+    }
     case SEC:
     {
         set_C_Flag(true);
+        break;
+    }
+    case AND_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
         break;
     }
     case RTI:
@@ -312,7 +353,7 @@ void CPU::executeInstruction()
     case EOR_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t value = memory[address];
 
         uint8_t result = A ^ value;
@@ -364,7 +405,6 @@ void CPU::executeInstruction()
         uint8_t ADH = currentInstruction.Data2;
 
         pc = joinBytes(ADH,ADL);
-
         break;
     }
     case EOR_ABS:
@@ -400,6 +440,27 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case EOR_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
+        break;
+    }
+    case EOR_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
+        break;
+    }
     case RTS:
     {
         pc = pullFromStack_2Bytes();
@@ -411,7 +472,7 @@ void CPU::executeInstruction()
     case ADC_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t operand = memory[address];
 
         uint16_t result = A + operand + (uint8_t)C_FlagSet();
@@ -473,6 +534,14 @@ void CPU::executeInstruction()
         loadRegister(&A,shiftedValue);
         break;
     }
+    case JMP_I:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        pc = calculateIndirectAddress(ADH,ADL);
+        break;
+    }
     case ADC_ABS:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -512,15 +581,44 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case ADC_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t operand = memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
     case SEI:
     {
         set_I_Flag(true);
         break;
     }
+    case ADC_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t operand = memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
     case STA_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         storeValueInMemory(A,address,false);
         break;
     }
@@ -589,6 +687,13 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case STA_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        storeValueInMemory(A,address,false);
+        break;
+    }
     case TYA:
     {
         loadRegister(&A,Y);
@@ -608,7 +713,7 @@ void CPU::executeInstruction()
     case LDA_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
 
         loadRegister(&A,memory[address]);
         break;
@@ -703,12 +808,25 @@ void CPU::executeInstruction()
     }
     case LDA_IY:
     {
-        sadfg
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+
+        loadRegister(&A,memory[address]);
         break;
     }
     case CLV:
     {
         set_V_Flag(false);
+        break;
+    }
+    case LDA_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t value = memory[address];
+
+        loadRegister(&A,value);
         break;
     }
     case TSX:
@@ -730,7 +848,7 @@ void CPU::executeInstruction()
     case CMP_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t value = memory[address];
 
         uint8_t result = A - value;
@@ -836,6 +954,18 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case CMP_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+        break;
+    }
     case CLD:
     {
         set_D_Flag(false);
@@ -855,7 +985,7 @@ void CPU::executeInstruction()
     case SBC_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
-        uint16_t address = indirectIndexedAddress(ADL,&X);
+        uint16_t address = indexedIndirectAddress(ADL,&X);
         uint8_t operand = ~memory[address];
 
         uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
@@ -964,6 +1094,19 @@ void CPU::executeInstruction()
         }
         break;
     }
+    case SBC_IY:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+        uint8_t operand = ~memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
     case SED:
     {
         set_D_Flag(true);
@@ -1039,6 +1182,22 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case ORA_IY:
+    {
+        return CPUInstruction(opCode,data1,5,false); //Según el manual son siempre 5 ciclos, aunque cruces página???
+    }
+    case ORA_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
     case CLC:
     {
         return CPUInstruction(opCode,2,false);
@@ -1104,9 +1263,25 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case AND_IY:
+    {
+        return CPUInstruction(opCode,data1,5,false); //Parece que son 5 aunque cruces página???
+    }
     case SEC:
     {
         return  CPUInstruction(opCode,2,false);
+    }
+    case AND_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     case RTI:
     {
@@ -1165,6 +1340,30 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case EOR_IY:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
+    }
+    case EOR_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
     case RTS:
     {
         return CPUInstruction(opCode,6,true);
@@ -1193,6 +1392,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case JMP_I:
+    {
+        return CPUInstruction(opCode,data1,data2,5,true);
+    }
     case ADC_ABS:
     {
         return CPUInstruction(opCode,data1,data2,4,false);
@@ -1218,9 +1421,33 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case ADC_IY:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
+    }
     case SEI:
     {
         return  CPUInstruction(opCode,2,false);
+    }
+    case ADC_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     case STA_IX:
     {
@@ -1274,6 +1501,10 @@ CPUInstruction CPU::decodeInstruction()
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
+    }
+    case STA_IY:
+    {
+        return CPUInstruction(opCode,data1,6,false);
     }
     case TYA:
     {
@@ -1350,11 +1581,31 @@ CPUInstruction CPU::decodeInstruction()
     }
     case LDA_IY:
     {
-        adsf //Aquí me quedo, el decode cambia si se hace cambio de página
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
     }
     case CLV:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case LDA_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     case TSX:
     {
@@ -1421,6 +1672,18 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case CMP_IY:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
+    }
     case CLD:
     {
         return CPUInstruction(opCode,2,false);
@@ -1486,6 +1749,18 @@ CPUInstruction CPU::decodeInstruction()
             //If the branch occurs to another page, the instruction takes 4 cycles
             return CPUInstruction(opCode,data1,4,false);
     }
+    case SBC_IY:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
+    }
     case SED:
     {
         return CPUInstruction(opCode,2,false);
@@ -1539,7 +1814,19 @@ int CPU::calculateRelativeAddress(uint8_t Offset)
     return pc + signedOffset;
 }
 
-uint16_t CPU::indirectIndexedAddress(uint8_t zp_ADL, register8 *index)
+uint16_t CPU::calculateIndirectAddress(uint8_t IAH, uint8_t IAL)
+{
+    uint8_t ADL = memory[joinBytes(IAH,IAL)];
+    uint8_t ADH = memory[joinBytes(IAH,IAL+1)]; //This instruction can not cross a page when calculating ADH, so only IAL is incremented. REF: http://www.6502.org/tutorials/6502opcodes.html#JMP
+    return joinBytes(ADH,ADL);
+}
+
+uint16_t CPU::absoluteIndexedAddress(uint8_t ADH, uint8_t ADL, register8 *index)
+{
+    return joinBytes(ADH,ADL) + *index;
+}
+
+uint16_t CPU::indexedIndirectAddress(uint8_t zp_ADL, register8 *index)
 {
     uint16_t zp_Address1 = calculateZeroPageAddress(zp_ADL + *index);
     uint16_t zp_Address2 = calculateZeroPageAddress(zp_ADL + *index + 1);
@@ -1547,6 +1834,16 @@ uint16_t CPU::indirectIndexedAddress(uint8_t zp_ADL, register8 *index)
     uint8_t ADH = memory[zp_Address2];
 
     return joinBytes(ADH,ADL);
+}
+
+uint16_t CPU::indirectIndexedAddress(uint8_t zp_ADL, register8 *index)
+{
+    uint16_t zp_Address1 = calculateZeroPageAddress(zp_ADL);
+    uint16_t zp_Address2 = calculateZeroPageAddress(zp_ADL+1);
+    uint8_t ADL = memory[zp_Address1];
+    uint8_t ADH = memory[zp_Address2];
+
+    return joinBytes(ADH, ADL) + *index;
 }
 
 bool CPU::samePageAddresses(int add1, int add2)
