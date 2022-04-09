@@ -170,6 +170,27 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case ORA_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A | value;
+        loadRegister(&A,result);
+        break;
+    }
+    case ASL_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        set_C_Flag(A & 0b10000000);
+        uint8_t shiftedValue = (value << 1);
+        storeValueInMemory(shiftedValue,address,true);
+        break;
+    }
     case ORA_ABS_Y:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -324,6 +345,27 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case AND_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A & value;
+        loadRegister(&A,result);
+        break;
+    }
+    case ROL_ZP_X:
+    {
+        uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&X);
+        uint8_t value = memory[address];
+
+        uint8_t shiftedValue = (value << 1) | C_FlagSet();
+        set_C_Flag(value & 0b10000000);
+
+        storeValueInMemory(shiftedValue,address,true);
+        break;
+    }
     case SEC:
     {
         set_C_Flag(true);
@@ -448,6 +490,27 @@ void CPU::executeInstruction()
 
         uint8_t result = A ^ value;
         loadRegister(&A,result);
+        break;
+    }
+    case EOR_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A ^ value;
+        loadRegister(&A,result);
+        break;
+    }
+    case LSR_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        set_C_Flag(value & 0b00000001);
+        uint8_t shiftedValue = (value >> 1);
+        storeValueInMemory(shiftedValue,address,true);
         break;
     }
     case EOR_ABS_Y:
@@ -595,6 +658,33 @@ void CPU::executeInstruction()
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
         break;
     }
+    case ADC_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t operand = memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();
+
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
+    case ROR_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t C = C_FlagSet();
+        uint8_t shiftedValue = (value >> 1) | (C << 7);
+        set_C_Flag(value & 0b00000001);
+
+        storeValueInMemory(shiftedValue,address,true);
+        break;
+    }
     case SEI:
     {
         set_I_Flag(true);
@@ -694,9 +784,38 @@ void CPU::executeInstruction()
         storeValueInMemory(A,address,false);
         break;
     }
+    case STY_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        storeValueInMemory(Y,address,false);
+        break;
+    }
+    case STA_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        storeValueInMemory(A,address,false);
+        break;
+    }
+    case STX_ZP_Y:
+    {
+        uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        storeValueInMemory(X,address,false);
+        break;
+    }
     case TYA:
     {
         loadRegister(&A,Y);
+        break;
+    }
+    case STA_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+
+        storeValueInMemory(A,address,false);
         break;
     }
     case TXS:
@@ -814,6 +933,30 @@ void CPU::executeInstruction()
         loadRegister(&A,memory[address]);
         break;
     }
+    case LDY_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+
+        loadRegister(&Y,memory[address]);
+        break;
+    }
+    case LDA_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+
+        loadRegister(&A,memory[address]);
+        break;
+    }
+    case LDX_ZP_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&Y);
+
+        loadRegister(&X,memory[address]);
+        break;
+    }
     case CLV:
     {
         set_V_Flag(false);
@@ -832,6 +975,19 @@ void CPU::executeInstruction()
     case TSX:
     {
         loadRegister(&X,sp);
+        break;
+    }
+    case LDY_ABS_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&X);
+
+        uint8_t value = memory[address];
+
+        loadRegister(&Y,value);
+
+        sadfag //Error en el ciclo 12563. En teoría hay que sumar un por page crossing.
         break;
     }
     case CPY_I:
@@ -966,9 +1122,42 @@ void CPU::executeInstruction()
         set_C_Flag(value <= A);
         break;
     }
+    case CMP_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
+        break;
+    }
+    case DEC_ZP_X:
+    {
+        uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&X);
+        uint8_t value = memory[address];
+
+        storeValueInMemory(value-1,address,true);
+        break;
+    }
     case CLD:
     {
         set_D_Flag(false);
+        break;
+    }
+    case CMP_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t value = memory[address];
+
+        uint8_t result = A - value;
+        set_Z_Flag(result == 0);
+        set_N_Flag(result >> 7);
+        set_C_Flag(value <= A);
         break;
     }
     case CPX_I:
@@ -1107,9 +1296,44 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case SBC_ZP_X:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&X);
+        uint8_t operand = ~memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
+    case INC_ZP_X:
+    {
+        uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&X);
+        uint8_t value = memory[address];
+
+        storeValueInMemory(value+1,address,true);
+        break;
+    }
     case SED:
     {
         set_D_Flag(true);
+        break;
+    }
+    case SBC_ABS_Y:
+    {
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+        uint8_t operand = ~memory[address];
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
         break;
     }
     default:
@@ -1185,6 +1409,14 @@ CPUInstruction CPU::decodeInstruction()
     case ORA_IY:
     {
         return CPUInstruction(opCode,data1,5,false); //Según el manual son siempre 5 ciclos, aunque cruces página???
+    }
+    case ORA_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case ASL_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
     }
     case ORA_ABS_Y:
     {
@@ -1266,6 +1498,14 @@ CPUInstruction CPU::decodeInstruction()
     case AND_IY:
     {
         return CPUInstruction(opCode,data1,5,false); //Parece que son 5 aunque cruces página???
+    }
+    case AND_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case ROL_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
     }
     case SEC:
     {
@@ -1352,6 +1592,14 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case EOR_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case LSR_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case EOR_ABS_Y:
     {
         register8 temp = 0;
@@ -1433,6 +1681,14 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case ADC_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case ROR_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case SEI:
     {
         return  CPUInstruction(opCode,2,false);
@@ -1506,9 +1762,25 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,6,false);
     }
+    case STY_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case STA_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case STX_ZP_Y:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case TYA:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case STA_ABS_Y:
+    {
+        return CPUInstruction(opCode,data1,data2,5,false);
     }
     case TXS:
     {
@@ -1591,6 +1863,18 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case LDY_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case LDA_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case LDX_ZP_Y:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case CLV:
     {
         return CPUInstruction(opCode,2,false);
@@ -1610,6 +1894,18 @@ CPUInstruction CPU::decodeInstruction()
     case TSX:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case LDY_ABS_X:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&X);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     case CPY_I:
     {
@@ -1684,9 +1980,29 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case CMP_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case DEC_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case CLD:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case CMP_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     case CPX_I:
     {
@@ -1761,9 +2077,29 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case SBC_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case INC_ZP_X:
+    {
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case SED:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case SBC_ABS_Y:
+    {
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data1,data2,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data1,data2,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
     }
     default:
         notImplementedInstruction();
@@ -1812,6 +2148,11 @@ int CPU::calculateRelativeAddress(uint8_t Offset)
     int8_t signedOffset = (int8_t) Offset;
 
     return pc + signedOffset;
+}
+
+uint16_t CPU::ZeroPageIndexedAddress(uint8_t ADL, register8 *index)
+{
+    return calculateZeroPageAddress(ADL + *index);
 }
 
 uint16_t CPU::calculateIndirectAddress(uint8_t IAH, uint8_t IAL)

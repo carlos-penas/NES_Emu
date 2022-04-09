@@ -58,6 +58,7 @@ private:
     //Addressing modes
     int calculateZeroPageAddress(uint8_t ADL);
     int calculateRelativeAddress(uint8_t Offset);
+    uint16_t ZeroPageIndexedAddress(uint8_t ADL, register8 *index);
     uint16_t calculateIndirectAddress(uint8_t IAH, uint8_t ADL);
     uint16_t absoluteIndexedAddress(uint8_t ADH, uint8_t ADL, register8 *index);
     uint16_t indexedIndirectAddress(uint8_t zp_ADL, register8 *index);
