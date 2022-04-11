@@ -75,13 +75,6 @@ void CPU::executeInstruction()
     uint8_t opCode = currentInstruction.OpCode;
 
     switch (opCode){
-    case PHP:
-    {
-        //Bit 4 doesn't exist on the status register, only when it is pushed to the stack.  Ref: https://www.nesdev.org/wiki/Status_flags
-        uint8_t statusRegister = (P | 0b00010000);          //Bit4 = 1
-        pushToStack_1Byte(statusRegister);
-        break;
-    }
     case ORA_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -90,6 +83,12 @@ void CPU::executeInstruction()
 
         uint8_t result = A | value;
         loadRegister(&A,result);
+        break;
+    }
+    case 0x04:
+    {
+        //Illegal: DOP
+        //No operation
         break;
     }
     case ORA_ZP:
@@ -111,6 +110,13 @@ void CPU::executeInstruction()
         storeValueInMemory(shiftedValue,address,true);
         break;
     }
+    case PHP:
+    {
+        //Bit 4 doesn't exist on the status register, only when it is pushed to the stack.  Ref: https://www.nesdev.org/wiki/Status_flags
+        uint8_t statusRegister = (P | 0b00010000);          //Bit4 = 1
+        pushToStack_1Byte(statusRegister);
+        break;
+    }
     case ORA_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -125,6 +131,12 @@ void CPU::executeInstruction()
         uint8_t shiftedValue = A << 1;
 
         loadRegister(&A,shiftedValue);
+        break;
+    }
+    case 0x0C:
+    {
+        //Illegal: TOP
+        //No operation
         break;
     }
     case ORA_ABS:
@@ -170,6 +182,12 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case 0x14:
+    {
+        //Illegal: DOP
+        //No operation
+        break;
+    }
     case ORA_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -205,6 +223,18 @@ void CPU::executeInstruction()
 
         uint8_t result = A | value;
         loadRegister(&A,result);
+        break;
+    }
+    case 0x1A:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
+    case 0x1C:
+    {
+        //Illegal: TOP_ABS_X
+        //No operation
         break;
     }
     case ORA_ABS_X:
@@ -368,6 +398,12 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case 0x34:
+    {
+        //Illegal: DOP_ZP_X
+        //No operation
+        break;
+    }
     case AND_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -403,6 +439,19 @@ void CPU::executeInstruction()
 
         uint8_t result = A & value;
         loadRegister(&A,result);
+        break;
+    }
+    case 0x3A:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
+    case 0x3C:
+
+    {
+        //Illegal: TOP_ABS_X
+        //No operation
         break;
     }
     case AND_ABS_X:
@@ -447,6 +496,12 @@ void CPU::executeInstruction()
 
         uint8_t result = A ^ value;
         loadRegister(&A,result);
+        break;
+    }
+    case 0x44:
+    {
+        //Illegal: DOP_ZP
+        //No operation
         break;
     }
     case EOR_ZP:
@@ -539,6 +594,12 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case 0x54:
+    {
+        //Illegal: DOP_ZP_X
+        //No operation
+        break;
+    }
     case EOR_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -569,6 +630,18 @@ void CPU::executeInstruction()
 
         uint8_t result = A ^ value;
         loadRegister(&A,result);
+        break;
+    }
+    case 0x5A:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
+    case 0x5C:
+    {
+        //Illegal: TOP_ABS_X
+        //No operation
         break;
     }
     case EOR_ABS_X:
@@ -614,6 +687,12 @@ void CPU::executeInstruction()
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
+        break;
+    }
+    case 0x64:
+    {
+        //Illegal: DOP_ZP
+        //No operation
         break;
     }
     case ADC_ZP:
@@ -728,6 +807,18 @@ void CPU::executeInstruction()
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
         break;
     }
+    case 0x74:
+    {
+        //Illegal: DOP_ZP_X
+        //No operation
+        break;
+    }
+    case 0x7C:
+    {
+        //Illegal: TOP_ABS_X
+        //No operation
+        break;
+    }
     case ADC_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -775,6 +866,12 @@ void CPU::executeInstruction()
         loadRegister(&A,result);     //loadRegister function already considers N and Z flags.
         break;
     }
+    case 0x7A:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
     case ADC_ABS_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -804,11 +901,26 @@ void CPU::executeInstruction()
         storeValueInMemory(shiftedValue,address,true);
         break;
     }
+    case 0x80:
+    {
+        //Illegal: DOP
+        //No operation
+        break;
+    }
     case STA_IX:
     {
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = indexedIndirectAddress(ADL,&X);
         storeValueInMemory(A,address,false);
+        break;
+    }
+    case 0x83:
+    {
+        //Illegal: SAX_IX
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indexedIndirectAddress(ADL,&X);
+        uint8_t result = X & A;
+        storeValueInMemory(result,address,false); //En la docu pone que checkFlags = true ???? pero así funciona.
         break;
     }
     case STY_ZP:
@@ -827,6 +939,14 @@ void CPU::executeInstruction()
     {
         int address = calculateZeroPageAddress(currentInstruction.Data1);
         storeValueInMemory(X,address,false);
+        break;
+    }
+    case 0x87:
+    {
+        //Illegal: SAX_ZP
+        uint16_t address = calculateZeroPageAddress(currentInstruction.Data1);
+        uint8_t result = X & A;
+        storeValueInMemory(result,address,false); //En la docu pone que checkFlags = true ???? pero así funciona.
         break;
     }
     case DEY:
@@ -862,6 +982,16 @@ void CPU::executeInstruction()
         uint8_t ADH = currentInstruction.Data2;
 
         storeValueInMemory(X,ADH,ADL,false);
+        break;
+    }
+    case 0x8F:
+    {
+        //Illegal: SAX_ABS
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint8_t result = X & A;
+
+        storeValueInMemory(result,ADH,ADL,false); //En la docu pone que checkFlags = true ???? pero así funciona.
         break;
     }
     case BCC:
@@ -901,6 +1031,14 @@ void CPU::executeInstruction()
     {
         uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&Y);
         storeValueInMemory(X,address,false);
+        break;
+    }
+    case 0x97:
+    {
+        //Illegal: SAX_ZP_Y
+        uint16_t address = ZeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        uint8_t result = X & A;
+        storeValueInMemory(result,address,false); //En la docu pone que checkFlags = true ???? pero así funciona.
         break;
     }
     case TYA:
@@ -951,6 +1089,16 @@ void CPU::executeInstruction()
         loadRegister(&X,Oper);
         break;
     }
+    case 0xA3:
+    {
+        //Illegal: LAX_IX
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indexedIndirectAddress(ADL,&X);
+
+        loadRegister(&A,memory[address]);
+        loadRegister(&X,memory[address]);
+        break;
+    }
     case LDY_ZP:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -972,6 +1120,16 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = calculateZeroPageAddress(ADL);
 
+        loadRegister(&X,memory[address]);
+        break;
+    }
+    case 0xA7:
+    {
+        //Illegal: LAX_ZP
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = calculateZeroPageAddress(ADL);
+
+        loadRegister(&A,memory[address]);
         loadRegister(&X,memory[address]);
         break;
     }
@@ -1021,6 +1179,18 @@ void CPU::executeInstruction()
         loadRegister(&X,value);
         break;
     }
+    case 0xAF:
+    {
+        //Illegal: LAX_ABS
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+
+        uint8_t value = memory[joinBytes(ADH,ADL)];
+
+        loadRegister(&A,value);
+        loadRegister(&X,value);
+        break;
+    }
     case BCS:
     {
         uint8_t offset = currentInstruction.Data1;
@@ -1039,6 +1209,16 @@ void CPU::executeInstruction()
         uint16_t address = indirectIndexedAddress(ADL,&Y);
 
         loadRegister(&A,memory[address]);
+        break;
+    }
+    case 0xB3:
+    {
+        //Illegal: LAX_IY
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indirectIndexedAddress(ADL,&Y);
+
+        loadRegister(&A,memory[address]);
+        loadRegister(&X,memory[address]);
         break;
     }
     case LDY_ZP_X:
@@ -1062,6 +1242,16 @@ void CPU::executeInstruction()
         uint8_t ADL = currentInstruction.Data1;
         uint16_t address = ZeroPageIndexedAddress(ADL,&Y);
 
+        loadRegister(&X,memory[address]);
+        break;
+    }
+    case 0xB7:
+    {
+        //Illegal: LAX_ZP_Y
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = ZeroPageIndexedAddress(ADL,&Y);
+
+        loadRegister(&A,memory[address]);
         loadRegister(&X,memory[address]);
         break;
     }
@@ -1117,6 +1307,19 @@ void CPU::executeInstruction()
         loadRegister(&X,value);
         break;
     }
+    case 0xBF:
+    {
+        //Illegal: LAX_ABS_Y
+        uint8_t ADL = currentInstruction.Data1;
+        uint8_t ADH = currentInstruction.Data2;
+        uint16_t address = absoluteIndexedAddress(ADH,ADL,&Y);
+
+        uint8_t value = memory[address];
+
+        loadRegister(&A,value);
+        loadRegister(&X,value);
+        break;
+    }
     case CPY_I:
     {
         uint8_t value = currentInstruction.Data1;
@@ -1138,6 +1341,18 @@ void CPU::executeInstruction()
         set_Z_Flag(result == 0);
         set_N_Flag(result >> 7);
         set_C_Flag(value <= A);
+        break;
+    }
+    case 0xC3:
+    {
+        //Illegal: DCP_IX
+        uint8_t ADL = currentInstruction.Data1;
+        uint16_t address = indexedIndirectAddress(ADL,&X);
+        uint8_t value = memory[address];
+
+        uint16_t result = value - 1;
+        set_C_Flag(result & 0x10);
+        storeValueInMemory(result,address,true);
         break;
     }
     case CPY_ZP:
@@ -1249,6 +1464,12 @@ void CPU::executeInstruction()
         set_C_Flag(value <= A);
         break;
     }
+    case 0xD4:
+    {
+        //Illegal: DOP_ZP_X
+        //No operation
+        break;
+    }
     case CMP_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -1285,6 +1506,18 @@ void CPU::executeInstruction()
         set_Z_Flag(result == 0);
         set_N_Flag(result >> 7);
         set_C_Flag(value <= A);
+        break;
+    }
+    case 0xDA:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
+    case 0xDC:
+    {
+        //Illegal: TOP_ABS_X
+        //No opertaion
         break;
     }
     case CMP_ABS_X:
@@ -1387,6 +1620,18 @@ void CPU::executeInstruction()
         //No operation
         break;
     }
+    case 0xEB:
+    {
+        //Illegal: SBC_I
+        uint8_t operand = ~currentInstruction.Data1;
+
+        uint16_t result = A + operand + (uint8_t)C_FlagSet();       //Parece que funciona bien sin invertir Carry Flag??
+        set_C_Flag(result > 0xFF);
+        set_V_Flag(operationHasOverflow(A,operand,result));
+
+        loadRegister(&A,result);
+        break;
+    }
     case CPX_ABS:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -1446,6 +1691,12 @@ void CPU::executeInstruction()
         loadRegister(&A,result);
         break;
     }
+    case 0xF4:
+    {
+        //Illegal: DOP_ZP_X
+        //No operation
+        break;
+    }
     case SBC_ZP_X:
     {
         uint8_t ADL = currentInstruction.Data1;
@@ -1484,6 +1735,18 @@ void CPU::executeInstruction()
         set_V_Flag(operationHasOverflow(A,operand,result));
 
         loadRegister(&A,result);
+        break;
+    }
+    case 0xFA:
+    {
+        //Illegal: NOP
+        //No operation
+        break;
+    }
+    case 0xFC:
+    {
+        //Illegal: TOP_ABS_X
+        //No operation
         break;
     }
     case SBC_ABS_X:
@@ -1531,13 +1794,14 @@ CPUInstruction CPU::decodeInstruction()
     data2 = memory[pc+2];
 
     switch (opCode){
-    case PHP:
-    {
-        return CPUInstruction(opCode,3,false);
-    }
     case ORA_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case 0x04:
+    {
+        //Illegal: DOP
+        return CPUInstruction(opCode,data1,3,false);
     }
     case ORA_ZP:
     {
@@ -1547,6 +1811,10 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,5,false);
     }
+    case PHP:
+    {
+        return CPUInstruction(opCode,3,false);
+    }
     case ORA_I:
     {
         return CPUInstruction(opCode,data1,2,false);
@@ -1554,6 +1822,11 @@ CPUInstruction CPU::decodeInstruction()
     case ASL_A:
     {
         return CPUInstruction(opCode,2,false);
+    }
+    case 0x0C:
+    {
+        //Illegal: TOP
+        return CPUInstruction(opCode,data1,data2,4,false);
     }
     case ORA_ABS:
     {
@@ -1584,6 +1857,11 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,5,false); //Según el manual son siempre 5 ciclos, aunque cruces página???
     }
+    case 0x14:
+    {
+        //Illegal: DOP
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case ORA_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -1601,6 +1879,24 @@ CPUInstruction CPU::decodeInstruction()
         register8 temp = 0;
         uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
         uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
+    case 0x1A:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
+    case 0x1C:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePageAddresses(addressWithIndex,addressWithoutIndex))
             return CPUInstruction(opCode,data1,data2,4,false);
@@ -1689,6 +1985,11 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,5,false); //Parece que son 5 aunque cruces página???
     }
+    case 0x34:
+    {
+        //Illegal: DOP_ZP_X
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case AND_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -1706,6 +2007,24 @@ CPUInstruction CPU::decodeInstruction()
         register8 temp = 0;
         uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
         uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
+    case 0x3A:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
+    case 0x3C:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePageAddresses(addressWithIndex,addressWithoutIndex))
             return CPUInstruction(opCode,data1,data2,4,false);
@@ -1736,6 +2055,11 @@ CPUInstruction CPU::decodeInstruction()
     case EOR_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case 0x44:
+    {
+        //Illegal: DOP_ZP
+        return CPUInstruction(opCode,data1,3,false);
     }
     case EOR_ZP:
     {
@@ -1798,6 +2122,11 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case 0x54:
+    {
+        //Illegal: DOP_ZP_X
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case EOR_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -1811,6 +2140,24 @@ CPUInstruction CPU::decodeInstruction()
         register8 temp = 0;
         uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
         uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
+    case 0x5A:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
+    case 0x5C:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePageAddresses(addressWithIndex,addressWithoutIndex))
             return CPUInstruction(opCode,data1,data2,4,false);
@@ -1841,6 +2188,11 @@ CPUInstruction CPU::decodeInstruction()
     case ADC_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case 0x64:
+    {
+        //Illegal: DOP_ZP
+        return CPUInstruction(opCode,data1,3,false);
     }
     case ADC_ZP:
     {
@@ -1903,6 +2255,24 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case 0x74:
+    {
+        //Illegal: DOP_ZP_X
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case 0x7C:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
     case ADC_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -1927,6 +2297,11 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,data2,5,false);
     }
+    case 0x7A:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
     case ADC_ABS_X:
     {
         register8 temp = 0;
@@ -1943,8 +2318,18 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,data2,7,false);
     }
+    case 0x80:
+    {
+        //Illegal: DOP
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case STA_IX:
     {
+        return CPUInstruction(opCode,data1,6,false);
+    }
+    case 0x83:
+    {
+        //Illegal: SAX_IX
         return CPUInstruction(opCode,data1,6,false);
     }
     case STY_ZP:
@@ -1957,6 +2342,11 @@ CPUInstruction CPU::decodeInstruction()
     }
     case STX_ZP:
     {
+        return CPUInstruction(opCode,data1,3,false);
+    }
+    case 0x87:
+    {
+        //Illegal: SAX_ZP
         return CPUInstruction(opCode,data1,3,false);
     }
     case DEY:
@@ -1977,6 +2367,11 @@ CPUInstruction CPU::decodeInstruction()
     }
     case STX_ABS:
     {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case 0x8F:
+    {
+        //Illegal: SAX_ABS
         return CPUInstruction(opCode,data1,data2,4,false);
     }
     case BCC:
@@ -2012,6 +2407,11 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,4,false);
     }
+    case 0x97:
+    {
+        //Illegal: SAX_ZP_Y
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case TYA:
     {
         return CPUInstruction(opCode,2,false);
@@ -2040,6 +2440,11 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,data1,2,false);
     }
+    case 0xA3:
+    {
+        //Illegal: LAX_IX
+        return CPUInstruction(opCode,data1,6,false);
+    }
     case LDY_ZP:
     {
         return CPUInstruction(opCode,data1,3,false);
@@ -2050,6 +2455,11 @@ CPUInstruction CPU::decodeInstruction()
     }
     case LDX_ZP:
     {
+        return CPUInstruction(opCode,data1,3,false);
+    }
+    case 0xA7:
+    {
+        //Illegal: LAX_ZP
         return CPUInstruction(opCode,data1,3,false);
     }
     case TAY:
@@ -2074,6 +2484,11 @@ CPUInstruction CPU::decodeInstruction()
     }
     case LDX_ABS:
     {
+        return CPUInstruction(opCode,data1,data2,4,false);
+    }
+    case 0xAF:
+    {
+        //Illegal: LAX_ABS
         return CPUInstruction(opCode,data1,data2,4,false);
     }
     case BCS:
@@ -2105,6 +2520,19 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case 0xB3:
+    {
+        //Illegal: LAX_IY
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = indirectIndexedAddress(data1,&temp);
+        uint16_t addressWithIndex = indirectIndexedAddress(data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,5,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,6,false);
+    }
     case LDY_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -2115,6 +2543,11 @@ CPUInstruction CPU::decodeInstruction()
     }
     case LDX_ZP_Y:
     {
+        return CPUInstruction(opCode,data1,4,false);
+    }
+    case 0xB7:
+    {
+        //Illegal: LAX_ZP_Y
         return CPUInstruction(opCode,data1,4,false);
     }
     case CLV:
@@ -2173,6 +2606,19 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,data2,5,false);
     }
+    case 0xBF:
+    {
+        //Illegal: LAX_ABS_Y
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
     case CPY_I:
     {
         return CPUInstruction(opCode,data1,2,false);
@@ -2180,6 +2626,11 @@ CPUInstruction CPU::decodeInstruction()
     case CMP_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
+    }
+    case 0xC3:
+    {
+        //Illegal: DCP_IX
+        return CPUInstruction(opCode,data1,8,false);
     }
     case CPY_ZP:
     {
@@ -2246,6 +2697,11 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case 0xD4:
+    {
+        //Illegal: DOP_ZP_X
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case CMP_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -2263,6 +2719,24 @@ CPUInstruction CPU::decodeInstruction()
         register8 temp = 0;
         uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
         uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
+    case 0xDA:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
+    case 0xDC:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePageAddresses(addressWithIndex,addressWithoutIndex))
             return CPUInstruction(opCode,data1,data2,4,false);
@@ -2318,6 +2792,11 @@ CPUInstruction CPU::decodeInstruction()
     {
         return CPUInstruction(opCode,2,false);
     }
+    case 0xEB:
+    {
+        //Illegal: SBC_I
+        return CPUInstruction(opCode,data1,2,false);
+    }
     case CPX_ABS:
     {
         return CPUInstruction(opCode,data1,data2,4,false);
@@ -2359,6 +2838,11 @@ CPUInstruction CPU::decodeInstruction()
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
             return CPUInstruction(opCode,data1,6,false);
     }
+    case 0xF4:
+    {
+        //Illegal: DOP_ZP_X
+        return CPUInstruction(opCode,data1,4,false);
+    }
     case SBC_ZP_X:
     {
         return CPUInstruction(opCode,data1,4,false);
@@ -2376,6 +2860,24 @@ CPUInstruction CPU::decodeInstruction()
         register8 temp = 0;
         uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
         uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
+
+        if(samePageAddresses(addressWithIndex,addressWithoutIndex))
+            return CPUInstruction(opCode,data1,data2,4,false);
+        else
+            //If a page is crossed when calculating the address, the instruction takes one extra cycle
+            return CPUInstruction(opCode,data1,data2,5,false);
+    }
+    case 0xFA:
+    {
+        //Illegal: NOP
+        return CPUInstruction(opCode,2,false);
+    }
+    case 0xFC:
+    {
+        //Illegal: TOP_ABS_X
+        register8 temp = 0;
+        uint16_t addressWithoutIndex = absoluteIndexedAddress(data2,data1,&temp);
+        uint16_t addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePageAddresses(addressWithIndex,addressWithoutIndex))
             return CPUInstruction(opCode,data1,data2,4,false);
