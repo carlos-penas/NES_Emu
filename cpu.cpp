@@ -27,20 +27,24 @@ void CPU::run()
     }
     printf("\nHalting the system...\n");
     printf("NES TEST RESULTS: %02X %02X\n", memory[0x02],memory[0x03]);
+//    printf("Instr_timing RESULTS:\n");
+//    printf("State: %02X\n", memory[0x6000]);
+//    printf("%s", memory[0x6004]);
 }
 
 void CPU::loadProgram(unsigned char *program, int size)
 {
-    memcpy(&memory[0xBFF0],program,size);
-//    printf("Primera instrucción: %02x\n", memory[0xC000]);
-//    printf("Luego: %02x\n", memory[0xC001]);
-//    printf("Luego: %02x\n", memory[0xC002]);
-//    printf("Últimas: %02x\n", memory[0xFFFA]);
-//    printf("Últimas: %02x\n", memory[0xFFFB]);
-//    printf("Últimas: %02x\n", memory[0xFFFC]);
-//    printf("Últimas: %02x\n", memory[0xFFFD]);
-//    printf("Últimas: %02x\n", memory[0xFFFE]);
-    //    printf("Últimas: %02x\n", memory[0xFFFF]);
+    memcpy(&memory[0x10000-size],program,size);
+
+    printf("Primera instrucción: %02x\n", memory[0xC000]);
+    printf("Luego: %02x\n", memory[0xC001]);
+    printf("Luego: %02x\n", memory[0xC002]);
+    printf("Últimas: %02x\n", memory[0xFFFA]);
+    printf("Últimas: %02x\n", memory[0xFFFB]);
+    printf("Últimas: %02x\n", memory[0xFFFC]);
+    printf("Últimas: %02x\n", memory[0xFFFD]);
+    printf("Últimas: %02x\n", memory[0xFFFE]);
+    printf("Últimas: %02x\n", memory[0xFFFF]);
 }
 
 void CPU::executeCycle()
@@ -67,7 +71,6 @@ void CPU::executeCycle()
         {
             pc+=currentInstruction.Bytes;
         }
-
     }
 }
 
