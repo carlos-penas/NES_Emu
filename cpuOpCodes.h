@@ -2,7 +2,7 @@
 #define CPUOPCODES_H
 
 //Definition of the operation code for all of the CPU instructions
-enum cpuOpCodes{
+enum opCodes{
     BRK         = 0x00,
     ORA_IX      = 0x01,
     //          = 0x02,

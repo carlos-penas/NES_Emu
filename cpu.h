@@ -5,7 +5,8 @@
 
 typedef uint8_t register8;
 typedef uint16_t register16;
-
+typedef uint8_t Byte;
+typedef uint16_t Address;
 
 class CPU
 {
@@ -51,20 +52,20 @@ private:
     void printCPUState();
     
     //Utilities
-    int joinBytes(uint8_t msB, uint8_t lsB);
-    uint8_t lowByte(int data);
-    uint8_t highByte(int data);
+    Address joinBytes(Byte msB, Byte lsB);
+    Byte lowByte(Address data);
+    Byte highByte(Address data);
 
     //Addressing modes
-    int calculateZeroPageAddress(uint8_t ADL);
-    int calculateRelativeAddress(uint8_t Offset);
-    uint16_t ZeroPageIndexedAddress(uint8_t ADL, register8 *index);
-    uint16_t calculateIndirectAddress(uint8_t IAH, uint8_t ADL);
-    uint16_t absoluteIndexedAddress(uint8_t ADH, uint8_t ADL, register8 *index);
-    uint16_t indexedIndirectAddress(uint8_t zp_ADL, register8 *index);
-    uint16_t indirectIndexedAddress(uint8_t zp_ADL, register8 *index);
+    Address zeroPageAddress(Byte ADL);
+    Address relativeAddress(Byte Offset);
+    Address zeroPageIndexedAddress(Byte ADL, register8 *index);
+    Address indirectAddress(Byte IAH, Byte ADL);
+    Address absoluteIndexedAddress(Byte ADH, Byte ADL, register8 *index);
+    Address indexedIndirectAddress(Byte zp_ADL, register8 *index);
+    Address indirectIndexedAddress(Byte zp_ADL, register8 *index);
 
-    bool samePageAddresses(int add1, int add2);
+    bool samePageAddresses(Address add1, Address add2);
 
     //Flags
     void set_N_Flag(bool set);
@@ -81,23 +82,45 @@ private:
     bool Z_FlagSet();
     bool C_FlagSet();
 
-    bool operationHasOverflow(uint8_t a, uint8_t b, uint8_t result);
-
+    bool operationHasOverflow(Byte a, Byte b, Byte result);
 
     //Stack
-    void pushToStack_2Bytes(int data);
-    void pushToStack_2Bytes(uint8_t HByte, uint8_t LByte);
-    void pushToStack_1Byte(uint8_t data);
-
-    int pullFromStack_2Bytes();
-    uint8_t pullFromStack_1Byte();
+    void pushToStack_2Bytes(Address data);
+    void pushToStack_2Bytes(Byte HByte, Byte LByte);
+    void pushToStack_1Byte(Byte data);
+    Address pullFromStack_2Bytes();
+    Byte pullFromStack_1Byte();
 
     //Registers
-    void loadRegister(register8 *reg, uint8_t value);
+    void loadRegister(register8 *reg, Byte value);
 
     //Memory
-    void storeValueInMemory(uint8_t value, uint8_t ADH, uint8_t ADL, bool checkFlags);
-    void storeValueInMemory(uint8_t value, uint16_t address, bool checkFlags);
+    void storeValueInMemory(Byte value, Byte ADH, Byte ADL, bool checkFlags);
+    void storeValueInMemory(Byte value, Address address, bool checkFlags);
+
+    //Official Instructions
+    void ADC(Byte operand);    void AND(Byte value);      void ASL(Address address); void BCC();                void BCS();                void BEQ();
+    void BIT(Byte value);      void BMI();                void BNE();                void BPL();                void BRK();                void BVC();
+    void BVS();                void CLC();                void CLD();                void CLI();                void CLV();                void CMP(Byte value);
+    void CPX(Byte value);      void CPY(Byte value);      void DEC(Address address); void DEX();                void DEY();                void EOR(Byte value);
+    void INC(Address address); void INX();                void INY();                void JMP(Address address); void JSR();                void LDA(Byte value);
+    void LDX(Byte value);      void LDY(Byte value);      void LSR(Address address); void NOP();                void ORA(Byte value);      void PHA();
+    void PHP();                void PLA();                void PLP();                void ROL(Address address); void ROR(Address address); void RTI();
+    void RTS();                void SBC(Byte operand);    void SEC();                void SED();                void SEI();                void STA(Address address);
+    void STX(Address address); void STY(Address address); void TAX();                void TAY();                void TSX();                void TXA();
+    void TXS();                void TYA();
+
+    //Unofficial/Illegal Instructions
+    void DCP(Address address);
+    void DOP();
+    void ISC(Address address);
+    void LAX(Address address);
+    void RLA(Address address);
+    void RRA(Address address);
+    void SAX(Address address);
+    void SLO(Address address);
+    void SRE(Address address);
+    void TOP();
 };
 
 #endif // CPU_H
