@@ -7,7 +7,7 @@ CPUInstruction::CPUInstruction()
     jumpInstruction = false;
 }
 
-CPUInstruction::CPUInstruction(uint8_t opCode, int cycles, bool isJumpInstruction)
+CPUInstruction::CPUInstruction(Byte opCode, int cycles, bool isJumpInstruction)
 {
     OpCode = opCode;
     Data1 = 0x00;
@@ -21,7 +21,7 @@ CPUInstruction::CPUInstruction(uint8_t opCode, int cycles, bool isJumpInstructio
     jumpInstruction = isJumpInstruction;
 }
 
-CPUInstruction::CPUInstruction(uint8_t opCode, uint8_t data1, int cycles, bool isJumpInstruction)
+CPUInstruction::CPUInstruction(Byte opCode, Byte data1, int cycles, bool isJumpInstruction)
 {
     OpCode = opCode;
     Data1 = data1;
@@ -35,7 +35,7 @@ CPUInstruction::CPUInstruction(uint8_t opCode, uint8_t data1, int cycles, bool i
     jumpInstruction = isJumpInstruction;
 }
 
-CPUInstruction::CPUInstruction(uint8_t opCode, uint8_t data1, uint8_t data2, int cycles, bool isJumpInstruction)
+CPUInstruction::CPUInstruction(Byte opCode, Byte data1, Byte data2, int cycles, bool isJumpInstruction)
 {
     OpCode = opCode;
     Data1 = data1;

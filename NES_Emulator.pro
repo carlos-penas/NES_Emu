@@ -27,4 +27,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     cpu.h \
     cpuOpCodes.h \
-    cpuinstruction.h
+    cpuinstruction.h \
+    types.h

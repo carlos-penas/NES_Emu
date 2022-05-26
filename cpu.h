@@ -1,12 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
-#include <cstdint>
+#include "types.h"
 #include <cpuinstruction.h>
-
-typedef uint8_t Register8;
-typedef uint16_t Register16;
-typedef uint8_t Byte;
-typedef uint16_t Address;
 
 class CPU
 {
