@@ -2,8 +2,7 @@
 
 CPUInstruction::CPUInstruction()
 {
-    IsDecoded = false;
-
+    IsExecuted = true;
     jumpInstruction = false;
 }
 
@@ -16,7 +15,7 @@ CPUInstruction::CPUInstruction(Byte opCode, int cycles, bool isJumpInstruction)
     Bytes = 1;
     Cycles = cycles;
 
-    IsDecoded = true;
+    IsExecuted = false;
 
     jumpInstruction = isJumpInstruction;
 }
@@ -30,7 +29,7 @@ CPUInstruction::CPUInstruction(Byte opCode, Byte data1, int cycles, bool isJumpI
     Bytes = 2;
     Cycles = cycles;
 
-    IsDecoded = true;
+    IsExecuted = false;
 
     jumpInstruction = isJumpInstruction;
 }
@@ -44,7 +43,7 @@ CPUInstruction::CPUInstruction(Byte opCode, Byte data1, Byte data2, int cycles, 
     Bytes = 3;
     Cycles = cycles;
 
-    IsDecoded = true;
+    IsExecuted = false;
 
     jumpInstruction = isJumpInstruction;
 }

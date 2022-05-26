@@ -36,22 +36,21 @@ void CPU::run()
 void CPU::loadProgram(unsigned char *program, int size)
 {
     memcpy(&Cartridge[0xBFE0-size],program,size);
-
-    printf("Primera instrucción: %02x\n", memoryRead(0xC000));
-    printf("Luego: %02x\n", memoryRead(0xC001));
-    printf("Luego: %02x\n", memoryRead(0xC002));
-    printf("Últimas: %02x\n", memoryRead(0xFFFA));
-    printf("Últimas: %02x\n", memoryRead(0xFFFB));
-    printf("Últimas: %02x\n", memoryRead(0xFFFC));
-    printf("Últimas: %02x\n", memoryRead(0xFFFD));
-    printf("Últimas: %02x\n", memoryRead(0xFFFE));
-    printf("Últimas: %02x\n", memoryRead(0xFFFF));
+//    printf("Primera instrucción: %02x\n", memoryRead(0xC000));
+//    printf("Luego: %02x\n", memoryRead(0xC001));
+//    printf("Luego: %02x\n", memoryRead(0xC002));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFA));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFB));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFC));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFD));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFE));
+//    printf("Últimas: %02x\n", memoryRead(0xFFFF));
 }
 
 void CPU::executeCycle()
 {
     //The instruction is decoded only on its first cycle
-    if(!currentInstruction.IsDecoded)
+    if(currentInstruction.IsExecuted)
     {
         currentInstruction = decodeInstruction();
         printCPUState();
@@ -65,7 +64,7 @@ void CPU::executeCycle()
     if(currentInstruction.Cycles == 0)
     {
         executeInstruction();
-        currentInstruction.IsDecoded = false;
+        currentInstruction.IsExecuted = true;
 
         //The pc is only updated if the instruction is not a branch instruction
         if(!currentInstruction.jumpInstruction)

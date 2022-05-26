@@ -34,10 +34,8 @@ int main(int argc,char* argv[])
 //            printf("%02X - %02X \n", i,header[i]);
 //        }
         uint64_t PRG_ROM_Size = 16384 * header[4];
-        cout << "Es" << PRG_ROM_Size << endl;
+        cout << "Es " << PRG_ROM_Size << endl;
         //printf("\nEl Byte 4 es %02X --> Tamaño: %ld bytes", header[4], (long)PRG_ROM_Size);
-
-
 
         unsigned char PRG_ROM[0xBFE0];
 

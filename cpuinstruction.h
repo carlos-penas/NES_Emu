@@ -17,7 +17,7 @@ public:
     int Cycles;
     int Bytes;
 
-    bool IsDecoded;
+    bool IsExecuted;
     bool jumpInstruction;
 
 
