@@ -49,11 +49,6 @@ private:
     CPUInstruction decodeInstruction();
 
     void printCPUState();
-    
-    //Utilities
-    Address joinBytes(Byte msB, Byte lsB);
-    Byte lowByte(Address data);
-    Byte highByte(Address data);
 
     //Addressing modes
     Address zeroPageAddress(Byte ADL);

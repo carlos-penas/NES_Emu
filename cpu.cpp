@@ -1,7 +1,8 @@
 #include "cpu.h"
-#include <cstring>
 #include "cpuOpCodes.h"
+#include "utils.h"
 #include "stdio.h"
+#include <cstring>
 
 CPU::CPU()
 {
@@ -144,7 +145,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ORA(memoryRead(address));
         break;
     }
@@ -152,7 +153,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ASL(address);
         break;
     }
@@ -161,7 +162,7 @@ void CPU::executeInstruction()
         //Illegal: SLO_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         SLO(address);
         break;
     }
@@ -331,7 +332,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         BIT(memoryRead(address));
         break;
     }
@@ -339,7 +340,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address =  joinBytes(ADH,ADL);
+        Address address =  Utils::joinBytes(ADH,ADL);
         AND(memoryRead(address));
         break;
     }
@@ -347,7 +348,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ROL(address);
         break;
     }
@@ -356,7 +357,7 @@ void CPU::executeInstruction()
         //Illegal: RLA_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         RLA(address);
         break;
     }
@@ -530,14 +531,14 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        JMP(joinBytes(ADH,ADL));
+        JMP(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::EOR_ABS:
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         EOR(memoryRead(address));
         break;
     }
@@ -545,7 +546,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         LSR(address);
         break;
     }
@@ -554,7 +555,7 @@ void CPU::executeInstruction()
         //Illegal: SRE_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         SRE(address);
         break;
     }
@@ -728,7 +729,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ADC(memoryRead(address));
         break;
     }
@@ -736,7 +737,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ROR(address);
         break;
     }
@@ -745,7 +746,7 @@ void CPU::executeInstruction()
         //Illegal: RRA_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         RRA(address);
         break;
     }
@@ -909,21 +910,21 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        STY(joinBytes(ADH,ADL));
+        STY(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::STA_ABS:
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        STA(joinBytes(ADH,ADL));
+        STA(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::STX_ABS:
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        STX(joinBytes(ADH,ADL));
+        STX(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0x8F:
@@ -931,7 +932,7 @@ void CPU::executeInstruction()
         //Illegal: SAX_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         SAX(address);
         break;
     }
@@ -1064,7 +1065,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         LDY(memoryRead(address));
         break;
     }
@@ -1072,7 +1073,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         LDA(memoryRead(address));
         break;
     }
@@ -1080,7 +1081,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         LDX(memoryRead(address));
         break;
     }
@@ -1089,7 +1090,7 @@ void CPU::executeInstruction()
         //Illegal: LAX_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         LAX(address);
         break;
     }
@@ -1249,7 +1250,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         CPY(memoryRead(address));
         break;
     }
@@ -1257,7 +1258,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         CMP(memoryRead(address));
         break;
     }
@@ -1265,7 +1266,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        DEC(joinBytes(ADH,ADL));
+        DEC(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0xCF:
@@ -1273,7 +1274,7 @@ void CPU::executeInstruction()
         //Illegal: DCP_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         DCP(address);
         break;
     }
@@ -1447,7 +1448,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         CPX(memoryRead(address));
         break;
     }
@@ -1455,7 +1456,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         SBC(memoryRead(address));
         break;
     }
@@ -1463,7 +1464,7 @@ void CPU::executeInstruction()
     {
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        INC(joinBytes(ADH,ADL));
+        INC(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0xEF:
@@ -1471,7 +1472,7 @@ void CPU::executeInstruction()
         //Illegal: ISC_ABS
         Byte ADL = currentInstruction.Data1;
         Byte ADH = currentInstruction.Data2;
-        Address address = joinBytes(ADH,ADL);
+        Address address = Utils::joinBytes(ADH,ADL);
         ISC(address);
         break;
     }
@@ -2932,32 +2933,15 @@ void CPU::printCPUState()
     }
 }
 
-/*Utilities*/
-Address CPU::joinBytes(Byte msB, Byte lsB)
-{
-    return (msB << 8) | lsB;
-}
-
-Byte CPU::lowByte(Address data)
-{
-    return (Byte) (data & 0xFF);
-}
-
-Byte CPU::highByte(Address data)
-{
-    return  (Byte) (data >> 8);
-}
-
 /*Addressing modes*/
 Address CPU::zeroPageAddress(Byte ADL)
 {
-    return joinBytes(0x00,ADL);
+    return Utils::joinBytes(0x00,ADL);
 }
 
 Address CPU::relativeAddress(Byte Offset)
 {
     int8_t signedOffset = (int8_t) Offset;
-
     return pc + signedOffset;
 }
 
@@ -2968,14 +2952,14 @@ Address CPU::zeroPageIndexedAddress(Byte ADL, Register8 *index)
 
 Address CPU::indirectAddress(Byte IAH, Byte IAL)
 {
-    Byte ADL = memoryRead(joinBytes(IAH,IAL));
-    Byte ADH = memoryRead(joinBytes(IAH,IAL+1)); //This instruction can not cross a page when calculating ADH, so only IAL is incremented. REF: http://www.6502.org/tutorials/6502opcodes.html#JMP
-    return joinBytes(ADH,ADL);
+    Byte ADL = memoryRead(Utils::joinBytes(IAH,IAL));
+    Byte ADH = memoryRead(Utils::joinBytes(IAH,IAL+1)); //This instruction can not cross a page when calculating ADH, so only IAL is incremented. REF: http://www.6502.org/tutorials/6502opcodes.html#JMP
+    return Utils::joinBytes(ADH,ADL);
 }
 
 Address CPU::absoluteIndexedAddress(Byte ADH, Byte ADL, Register8 *index)
 {
-    return joinBytes(ADH,ADL) + *index;
+    return Utils::joinBytes(ADH,ADL) + *index;
 }
 
 Address CPU::indexedIndirectAddress(Byte zp_ADL, Register8 *index)
@@ -2984,7 +2968,7 @@ Address CPU::indexedIndirectAddress(Byte zp_ADL, Register8 *index)
     Address zp_Address2 = zeroPageAddress(zp_ADL + *index + 1);
     Byte ADL = memoryRead(zp_Address1);
     Byte ADH = memoryRead(zp_Address2);
-    return joinBytes(ADH,ADL);
+    return Utils::joinBytes(ADH,ADL);
 }
 
 Address CPU::indirectIndexedAddress(Byte zp_ADL, Register8 *index)
@@ -2993,12 +2977,12 @@ Address CPU::indirectIndexedAddress(Byte zp_ADL, Register8 *index)
     Address zp_Address2 = zeroPageAddress(zp_ADL+1);
     Byte ADL = memoryRead(zp_Address1);
     Byte ADH = memoryRead(zp_Address2);
-    return joinBytes(ADH, ADL) + *index;
+    return Utils::joinBytes(ADH, ADL) + *index;
 }
 
 bool CPU::samePage(Address address1, Address address2)
 {
-    return (highByte(address1) == highByte(address2));
+    return (Utils::highByte(address1) == Utils::highByte(address2));
 }
 
 
@@ -3101,13 +3085,13 @@ bool CPU::operationHasOverflow(Byte a, Byte b, Byte result)
 /*Stack*/
 void CPU::pushToStack_2Bytes(Address data)
 {
-    pushToStack_1Byte(highByte(data));
-    pushToStack_1Byte(lowByte(data));
+    pushToStack_1Byte(Utils::highByte(data));
+    pushToStack_1Byte(Utils::lowByte(data));
 }
 
 void CPU::pushToStack_1Byte(Byte data)
 {
-    memoryWrite(data,joinBytes(0x01,sp),false);
+    memoryWrite(data,Utils::joinBytes(0x01,sp),false);
     sp--;
 }
 
@@ -3115,13 +3099,13 @@ Address CPU::pullFromStack_2Bytes()
 {
     Byte LByte = pullFromStack_1Byte();
     Byte HByte = pullFromStack_1Byte();
-    return joinBytes(HByte,LByte);
+    return Utils::joinBytes(HByte,LByte);
 }
 
 Byte CPU::pullFromStack_1Byte()
 {
     sp +=1;
-    return memoryRead(joinBytes(0x01,sp));
+    return memoryRead(Utils::joinBytes(0x01,sp));
 }
 
 /*Registers*/
@@ -3427,7 +3411,7 @@ void CPU::JSR()
 
     pushToStack_2Bytes(pc);
 
-    pc = joinBytes(ADH,ADL);
+    pc = Utils::joinBytes(ADH,ADL);
 }
 
 void CPU::LDA(Byte value)

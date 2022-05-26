@@ -17,7 +17,8 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         cpu.cpp \
         cpuinstruction.cpp \
-        main.cpp
+        main.cpp \
+        utils.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -28,4 +29,5 @@ HEADERS += \
     cpu.h \
     cpuOpCodes.h \
     cpuinstruction.h \
-    types.h
+    types.h \
+    utils.h
