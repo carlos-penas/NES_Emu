@@ -49,8 +49,6 @@ int main(int argc,char* argv[])
         cpu.loadProgram(PRG_ROM,PRG_ROM_Size);
     }
 
-
-
     cpu.run();
 
     return 0;

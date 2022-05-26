@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <cpuinstruction.h>
 
-typedef uint8_t register8;
-typedef uint16_t register16;
+typedef uint8_t Register8;
+typedef uint16_t Register16;
 typedef uint8_t Byte;
 typedef uint16_t Address;
 
@@ -25,21 +25,25 @@ public:
 private:
 
     //General purpose registers
-    register8 A;
-    register8 X;
-    register8 Y;
+    Register8 A;
+    Register8 X;
+    Register8 Y;
 
     //Program counter
-    register16 pc;
+    Register16 pc;
 
     //Stack Pointer
-    register8 sp;
+    Register8 sp;
 
     //Status register     --->   [ N | V |   | B | D | I | Z | C ]
-    register8 P;          //Bits:  7   6   5   4   3   2   1   0
+    Register8 P;          //Bits:  7   6   5   4   3   2   1   0
 
-    //RAM (64Kb)
-    register8 memory[0x10000];
+    //Memory Map (64KB)
+    Register8 RAM[0x800];           //  2 KB
+    Register8 PPU_Register[8];      //  8 B
+    Register8 APU_IO[0x18];         // 24 B
+    Register8 APU_Test[8];          //  8 B
+    Register8 Cartridge[0xBFE0];    // 49 KB
 
     bool HLT;
 
@@ -59,13 +63,13 @@ private:
     //Addressing modes
     Address zeroPageAddress(Byte ADL);
     Address relativeAddress(Byte Offset);
-    Address zeroPageIndexedAddress(Byte ADL, register8 *index);
+    Address zeroPageIndexedAddress(Byte ADL, Register8 *index);
     Address indirectAddress(Byte IAH, Byte ADL);
-    Address absoluteIndexedAddress(Byte ADH, Byte ADL, register8 *index);
-    Address indexedIndirectAddress(Byte zp_ADL, register8 *index);
-    Address indirectIndexedAddress(Byte zp_ADL, register8 *index);
+    Address absoluteIndexedAddress(Byte ADH, Byte ADL, Register8 *index);
+    Address indexedIndirectAddress(Byte zp_ADL, Register8 *index);
+    Address indirectIndexedAddress(Byte zp_ADL, Register8 *index);
 
-    bool samePageAddresses(Address add1, Address add2);
+    bool samePage(Address address1, Address address2);
 
     //Flags
     void set_N_Flag(bool set);
@@ -86,17 +90,16 @@ private:
 
     //Stack
     void pushToStack_2Bytes(Address data);
-    void pushToStack_2Bytes(Byte HByte, Byte LByte);
     void pushToStack_1Byte(Byte data);
     Address pullFromStack_2Bytes();
     Byte pullFromStack_1Byte();
 
     //Registers
-    void loadRegister(register8 *reg, Byte value);
+    void loadRegister(Register8 *reg, Byte value);
 
     //Memory
-    void storeValueInMemory(Byte value, Byte ADH, Byte ADL, bool checkFlags);
-    void storeValueInMemory(Byte value, Address address, bool checkFlags);
+    void memoryWrite(Byte value, Address address, bool checkFlags);
+    Byte memoryRead(Address address);
 
     //Official Instructions
     void ADC(Byte operand);    void AND(Byte value);      void ASL(Address address); void BCC();                void BCS();                void BEQ();
