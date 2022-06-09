@@ -15,6 +15,12 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+        Exceptions/notmappedaddressexception.cpp \
+        Mappers/mapper.cpp \
+        Mappers/mapper0.cpp \
+        Mappers/mapper2.cpp \
+        bus.cpp \
+        cartridge.cpp \
         cpu.cpp \
         cpuinstruction.cpp \
         main.cpp \
@@ -26,6 +32,12 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
+    Exceptions/notmappedaddressexception.h \
+    Mappers/mapper.h \
+    Mappers/mapper0.h \
+    Mappers/mapper2.h \
+    bus.h \
+    cartridge.h \
     cpu.h \
     cpuOpCodes.h \
     cpuinstruction.h \

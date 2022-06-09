@@ -4,8 +4,10 @@
 #include "stdio.h"
 #include <cstring>
 
-CPU::CPU()
+CPU::CPU(Bus *bus)
 {
+    this->bus = bus;
+
     A = 0;
     X = 0;
     Y = 0;
@@ -28,23 +30,10 @@ void CPU::run()
     }
     printf("\nHalting the system...\n");
     printf("NES TEST RESULTS: %02X %02X\n", memoryRead(0x02), memoryRead(0x03));
+
 //    printf("Instr_timing RESULTS:\n");
 //    printf("State: %02X\n", memory[0x6000]);
 //    printf("%s", memory[0x6004]);
-}
-
-void CPU::loadProgram(unsigned char *program, int size)
-{
-    memcpy(&Cartridge[0xBFE0-size],program,size);
-//    printf("Primera instrucción: %02x\n", memoryRead(0xC000));
-//    printf("Luego: %02x\n", memoryRead(0xC001));
-//    printf("Luego: %02x\n", memoryRead(0xC002));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFA));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFB));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFC));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFD));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFE));
-//    printf("Últimas: %02x\n", memoryRead(0xFFFF));
 }
 
 void CPU::executeCycle()
@@ -3124,80 +3113,12 @@ void CPU::memoryWrite(Byte value, Address address, bool checkFlags)
         set_N_Flag(value >> 7);
     }
 
-    //RAM
-    if (address <=0x1FFF)
-    {
-        //printf("Escritura [%04X] --> RAM[%04X]\n", address, (address & 0x07FF));
-        RAM[address & 0x07FF] = value;
-    }
-
-    //PPU Registers
-    if (address >= 0x2000 && address <= 0x3FFF)
-    {
-        //printf("Escritura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x0007));
-        PPU_Register[address & 0x0007] = value;
-    }
-
-    //APU I/O
-    if(address >= 0x4000 && address <= 0x4017)
-    {
-        //printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
-        APU_IO[address & 0x001F] = value;
-    }
-
-    //APU Test
-    if(address >= 0x4018 && address <= 0x401F)
-    {
-        //printf("Escritura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
-        APU_Test[address  & 0x0007] = value;
-    }
-
-    //Cartridge
-    if(address >= 0x4020)
-    {
-        printf("Escritura [%04X] --> Cartridge[%04X] ||| ATENCION: Se ha intentado escribir en la ROM", address, (address - (Address) 0x4020));
-        //Cartridge[address - (Address) 0x4020] = value;
-    }
+    bus->Write(value,address);
 }
 
 Byte CPU::memoryRead(Address address)
 {
-    //RAM
-    if (address <=0x1FFF)
-    {
-        //printf("Lectura [%04X] --> RAM[%04X]\n", address, (address & 0x07FF));
-        return RAM[address & 0x07FF];
-    }
-
-    //PPU Registers
-    if (address >= 0x2000 && address <= 0x3FFF)
-    {
-        printf("Lectura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x0007));
-        return PPU_Register[address & 0x0007];
-    }
-
-    //APU I/O
-    if(address >= 0x4000 && address <= 0x4017)
-    {
-        printf("Lectura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
-        return APU_IO[address & 0x001F];
-    }
-
-    //APU Test
-    if(address >= 0x4018 && address <= 0x401F)
-    {
-        printf("Lectura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
-        return APU_Test[address  & 0x0007];
-    }
-
-    //Cartridge
-    if(address >= 0x4020)
-    {
-        //printf("Lectura [%04X] --> Cartridge[%04X]\n", address, (address - (Address) 0x4020));
-        return Cartridge[address - (Address) 0x4020];
-    }
-    printf("Error, direccion de memoria no controlada: %04X\n", address);
-    return 0x00; //Nunca debería llegar aquí.
+    return bus->Read(address);
 }
 
 /*Official Instructions*/

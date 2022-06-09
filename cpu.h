@@ -2,15 +2,14 @@
 #define CPU_H
 #include "types.h"
 #include <cpuinstruction.h>
+#include "bus.h"
 
 class CPU
 {
 public:
-    CPU();
+    CPU(Bus *bus);
 
     void run();
-
-    void loadProgram(unsigned char *program, int size);
 
     void executeCycle();
     void executeInstruction();
@@ -18,7 +17,6 @@ public:
     void notImplementedInstruction();
 
 private:
-
     //General purpose registers
     Register8 A;
     Register8 X;
@@ -27,23 +25,18 @@ private:
     //Program counter
     Register16 pc;
 
-    //Stack Pointer
+    //Stack pointer
     Register8 sp;
 
     //Status register     --->   [ N | V |   | B | D | I | Z | C ]
     Register8 P;          //Bits:  7   6   5   4   3   2   1   0
 
-    //Memory Map (64KB)
-    Register8 RAM[0x800];           //  2 KB
-    Register8 PPU_Register[8];      //  8 B
-    Register8 APU_IO[0x18];         // 24 B
-    Register8 APU_Test[8];          //  8 B
-    Register8 Cartridge[0xBFE0];    // 49 KB
-
-    bool HLT;
+    //Memory access
+    Bus *bus;
 
     CPUInstruction currentInstruction;
 
+    bool HLT;
     int totalCycles;
     
     CPUInstruction decodeInstruction();
