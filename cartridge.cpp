@@ -71,9 +71,9 @@ bool Cartridge::loadROM(string path)
 
     printf("Mapper num: %d\n",mapperId);
     printf("Header version %d\n",headerType);
-    cout << "Tamanio ROM: " << PRG_ROM_Size << endl;
-    cout << "Tamanio RAM: " << PRG_RAM_Size << endl;
-    cout << "Tamanio CHR: " << CHR_ROM_Size << endl;
+    cout << "Tamaño ROM: " << PRG_ROM_Size << endl;
+    cout << "Tamaño RAM: " << PRG_RAM_Size << endl;
+    cout << "Tamaño CHR: " << CHR_ROM_Size << endl;
 
 
     if(mapperId == 0)
