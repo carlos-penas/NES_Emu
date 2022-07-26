@@ -66,6 +66,9 @@ bool Cartridge::loadROM(string path)
 
     PRG_ROM.resize(PRG_ROM_Size);
     file.read((char*)PRG_ROM.data(),PRG_ROM_Size);
+
+    CHR_ROM.resize(CHR_ROM_Size);
+    file.read((char*)CHR_ROM.data(),CHR_ROM_Size);
     file.close();
 
 
@@ -80,7 +83,7 @@ bool Cartridge::loadROM(string path)
     {
         if(PRG_ROM_Size == 16384 || PRG_ROM_Size == 32768)
         {
-            mapper = new Mapper0(PRG_ROM, PRG_RAM_Size);
+            mapper = new Mapper0(PRG_ROM, PRG_RAM_Size, CHR_ROM);
         }
         else
         {

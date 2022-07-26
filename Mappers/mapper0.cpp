@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include "Exceptions/notmappedaddressexception.h"
 
-Mapper0::Mapper0(vector<Register8> PRG_ROM, uint16_t PRG_RAM_Size)
-    : Mapper(PRG_ROM)
+Mapper0::Mapper0(vector<Register8> PRG_ROM, uint16_t PRG_RAM_Size, vector<Register8> CHR_ROM)
+    : Mapper(PRG_ROM,CHR_ROM)
 {
     if(PRG_RAM_Size > 0)
         PRG_RAM.resize(PRG_RAM_Size);

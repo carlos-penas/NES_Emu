@@ -21,7 +21,7 @@ int main(int argc,char* argv[])
     {
         bus.connectCartridge(&cartridge);
         CPU cpu(&bus);
-        cpu.run();
+        //cpu.run();
     }
     else
     {

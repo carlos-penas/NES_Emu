@@ -5,7 +5,7 @@
 class Mapper0 : public Mapper
 {
 public:
-    Mapper0(vector<Register8> PRG_ROM, uint16_t PRG_RAM_Size);
+    Mapper0(vector<Register8> PRG_ROM, uint16_t PRG_RAM_Size, vector<Register8> CHR_ROM);
 
     void CPU_Write(Byte value, Address address) override;
     Byte CPU_Read(Address address) override;
