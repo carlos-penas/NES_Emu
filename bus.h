@@ -19,7 +19,7 @@ private:
     Register8 PPU_Register[8];      //  8 B
     Register8 APU_IO[0x18];         // 24 B
     Register8 APU_Test[8];          //  8 B
-    Cartridge *cartridge;           // 49KB
+    Cartridge *cartridge;           // 49 KB
 };
 
 #endif // BUS_H

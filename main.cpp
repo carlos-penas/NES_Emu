@@ -1,4 +1,5 @@
 #include <cpu.h>
+#include "ppu.h"
 #include <cartridge.h>
 
 #define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/nestest.nes"
@@ -21,6 +22,8 @@ int main(int argc,char* argv[])
     {
         bus.connectCartridge(&cartridge);
         CPU cpu(&bus);
+        PPU ppu(&bus);
+        ppu.connectCartridge(&cartridge);
         //cpu.run();
     }
     else

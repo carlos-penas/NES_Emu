@@ -24,6 +24,7 @@ SOURCES += \
         cpu.cpp \
         cpuinstruction.cpp \
         main.cpp \
+        ppu.cpp \
         utils.cpp
 
 # Default rules for deployment.
@@ -41,5 +42,15 @@ HEADERS += \
     cpu.h \
     cpuOpCodes.h \
     cpuinstruction.h \
+    ppu.h \
     types.h \
     utils.h
+
+unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-graphics
+
+INCLUDEPATH += $$PWD/../../../../usr/include/SFML
+DEPENDPATH += $$PWD/../../../../usr/include/SFML
+
+unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-window
+
+unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-system
