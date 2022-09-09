@@ -113,3 +113,13 @@ Byte Cartridge::CPU_Read(Address address)
     return mapper->CPU_Read(address);
 }
 
+Byte *Cartridge::PPU_GetPattern(uint16_t index)
+{
+    return mapper->PPU_GetPattern(index);
+}
+
+Byte Cartridge::PPU_Read(Address address)
+{
+    return  mapper->PPU_Read(address);
+}
+

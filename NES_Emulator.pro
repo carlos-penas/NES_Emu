@@ -39,6 +39,7 @@ HEADERS += \
     Mappers/mapper2.h \
     bus.h \
     cartridge.h \
+    constants.h \
     cpu.h \
     cpuOpCodes.h \
     cpuinstruction.h \
@@ -46,6 +47,7 @@ HEADERS += \
     types.h \
     utils.h
 
+#-----SFML graphics library-----
 unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-graphics
 
 INCLUDEPATH += $$PWD/../../../../usr/include/SFML
@@ -54,3 +56,4 @@ DEPENDPATH += $$PWD/../../../../usr/include/SFML
 unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-window
 
 unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-system
+#-------------------------------

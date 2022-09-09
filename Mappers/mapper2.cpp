@@ -15,3 +15,14 @@ Byte Mapper2::CPU_Read(Address address)
 {
 
 }
+
+Byte* Mapper2::PPU_GetPattern(uint16_t index)
+{
+
+}
+
+Byte Mapper2::PPU_Read(Address address)
+{
+
+}
+

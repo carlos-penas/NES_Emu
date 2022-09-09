@@ -24,6 +24,7 @@ int main(int argc,char* argv[])
         CPU cpu(&bus);
         PPU ppu(&bus);
         ppu.connectCartridge(&cartridge);
+        ppu.drawPatternTable();
         //cpu.run();
     }
     else

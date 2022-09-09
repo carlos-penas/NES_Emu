@@ -10,6 +10,9 @@ public:
     void CPU_Write(Byte value, Address address) override;
     Byte CPU_Read(Address address) override;
 
+    Byte* PPU_GetPattern(uint16_t index) override;
+    Byte PPU_Read(Address address) override;
+
 private:
     vector<Register8> PRG_RAM;
 };

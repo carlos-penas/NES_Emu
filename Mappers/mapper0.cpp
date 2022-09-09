@@ -94,3 +94,19 @@ Byte Mapper0::CPU_Read(Address address)
         throw NotMappedAddressException(address,WriteAttempt);
     }
 }
+
+Byte* Mapper0::PPU_GetPattern(uint16_t index)
+{
+    printf("\n EL BYTE ES: \n");
+    for(int i = index * 16; i < index * 16 + 16; i++)
+    {
+        printf("%02X ",CHR_ROM[i]);
+    }
+    printf("\n");
+    return &CHR_ROM[index *16];
+}
+
+Byte Mapper0::PPU_Read(Address address)
+{
+    return CHR_ROM[address];
+}
