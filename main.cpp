@@ -22,10 +22,10 @@ int main(int argc,char* argv[])
     {
         bus.connectCartridge(&cartridge);
         CPU cpu(&bus);
-        PPU ppu(&bus);
-        ppu.connectCartridge(&cartridge);
-        ppu.drawPatternTable();
-        //cpu.run();
+//        PPU ppu(&bus);
+//        ppu.connectCartridge(&cartridge);
+//        ppu.drawPatternTable();
+        cpu.run();
     }
     else
     {

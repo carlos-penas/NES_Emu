@@ -139,3 +139,9 @@ int PPU::getPatternIndex(int tableRow, int tableCol)
 {
     return PT_TABLE_COLS * tableRow + tableCol;
 }
+
+
+//Siguiente:
+//Implementar interrupciones en la cpu. Ya se como hacer para que interaccione (clase NES??).
+//La ppu necesita un metodo: Acceso a memoria. Y ya dependiendo de eso va al cartucho o a lo que sea. Hay que comporobar las direcciones de memoria
+//que aparecen aquí: https://www.nesdev.org/wiki/PPU_pattern_tables (ultima linea) . De CHR_ROM. Están bien al acceder a ellas?? etc.

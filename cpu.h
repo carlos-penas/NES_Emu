@@ -38,7 +38,7 @@ private:
 
     bool HLT;
     int totalCycles;
-    
+
     CPUInstruction decodeInstruction();
 
     void printCPUState();
@@ -57,6 +57,7 @@ private:
     //Flags
     void set_N_Flag(bool set);
     void set_V_Flag(bool set);
+    void set_B_Flag(bool set);
     void set_D_Flag(bool set);
     void set_I_Flag(bool set);
     void set_Z_Flag(bool set);
@@ -83,6 +84,11 @@ private:
     //Memory
     void memoryWrite(Byte value, Address address, bool checkFlags);
     Byte memoryRead(Address address);
+
+    //Interrupts
+    void NMI();
+    void reset();
+    void IRQ();
 
     //Official Instructions
     void ADC(Byte operand);    void AND(Byte value);      void ASL(Address address); void BCC();                void BCS();                void BEQ();

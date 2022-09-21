@@ -4,6 +4,7 @@
 #include "stdio.h"
 #include <cstring>
 
+
 CPU::CPU(Bus *bus)
 {
     this->bus = bus;
@@ -12,14 +13,7 @@ CPU::CPU(Bus *bus)
     X = 0;
     Y = 0;
 
-    pc = 0xC000;
-    sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
-    P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
-
-    HLT = false;
-
-    currentInstruction = CPUInstruction();
-    totalCycles = 7;
+    reset();
 }
 
 void CPU::run()
@@ -28,9 +22,10 @@ void CPU::run()
     {
         executeCycle();
     }
-    printf("\nHalting the system...\n");
+    printf("\nHalting the system...\n\n");
     printf("NES TEST RESULTS: %02X %02X\n", memoryRead(0x02), memoryRead(0x03));
 
+    printf("Vectors: %02X, %02X, %02X, %02X\n",memoryRead(0xFFFC),memoryRead(0xFFFD),memoryRead(0xFFFE),memoryRead(0xFFFF));
 //    printf("Instr_timing RESULTS:\n");
 //    printf("State: %02X\n", memory[0x6000]);
 //    printf("%s", memory[0x6004]);
@@ -68,6 +63,11 @@ void CPU::executeInstruction()
     Byte opCode = currentInstruction.OpCode;
 
     switch (opCode){
+    case opCodes::BRK:
+    {
+        BRK();
+        break;
+    }
     case opCodes::ORA_IX:
     {
         Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
@@ -1587,6 +1587,10 @@ CPUInstruction CPU::decodeInstruction()
     data2 = memoryRead(pc+2);
 
     switch (opCode){
+    case opCodes::BRK:
+    {
+        return CPUInstruction(opCode,7,true);
+    }
     case opCodes::ORA_IX:
     {
         return CPUInstruction(opCode,data1,6,false);
@@ -2991,6 +2995,14 @@ void CPU::set_V_Flag(bool set)
         P &= 0b10111111;
 }
 
+void CPU::set_B_Flag(bool set)
+{
+    if(set)
+        P |= 0b00100000;
+    else
+        P &= 0b11011111;
+}
+
 void CPU::set_D_Flag(bool set)
 {
     if(set)
@@ -3121,6 +3133,47 @@ Byte CPU::memoryRead(Address address)
     return bus->Read(address);
 }
 
+/*Interrupts*/
+void CPU::NMI()
+{
+    Byte ADL = memoryRead(0xFFFA);
+    Byte ADH = memoryRead(0xFFFB);
+
+    pushToStack_2Bytes(pc);
+    pushToStack_1Byte(P);
+    set_I_Flag(true);
+
+    pc = Utils::joinBytes(ADH,ADL);
+}
+
+void CPU::reset()
+{
+//    Byte ADL = memoryRead(0xFFFC);
+//    Byte ADH = memoryRead(0xFFFD);
+//    pc = Utils::joinBytes(ADH,ADL);
+
+    pc = 0xC000;    //Para nestest empieza aquí.
+    sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
+    P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
+
+    HLT = false;
+
+    currentInstruction = CPUInstruction();
+    totalCycles = 7;
+}
+
+void CPU::IRQ()
+{
+    Byte ADL = memoryRead(0xFFFE);
+    Byte ADH = memoryRead(0xFFFF);
+
+    pushToStack_2Bytes(pc);
+    pushToStack_1Byte(P);
+    set_I_Flag(true);
+
+    pc = Utils::joinBytes(ADH,ADL);
+}
+
 /*Official Instructions*/
 void CPU::ADC(Byte operand)
 {
@@ -3210,7 +3263,13 @@ void CPU::BPL()
 
 void CPU::BRK()
 {
-    notImplementedInstruction();
+    Byte ADL = memoryRead(0xFFFE);
+    Byte ADH = memoryRead(0xFFFF);
+
+    pushToStack_2Bytes(pc+2);
+    PHP();
+    set_I_Flag(true);
+    pc = Utils::joinBytes(ADH,ADL);
 }
 
 void CPU::BVC()
@@ -3419,8 +3478,16 @@ void CPU::RTI()
 
 void CPU::RTS()
 {
-    pc = pullFromStack_2Bytes();
-    pc++;
+    if(sp !=0xFD)
+    {
+        pc = pullFromStack_2Bytes();
+        pc++;
+    }
+    else
+    {
+        //If stack pointer has a value of 0xFD it means this is the return point of the whole program.
+        HLT = true;
+    }
 }
 
 void CPU::SBC(Byte operand)
