@@ -3,6 +3,7 @@
 #include "types.h"
 #include <cpuinstruction.h>
 #include "bus.h"
+#include "interrupt.h"
 
 class CPU
 {
@@ -35,6 +36,10 @@ private:
     Bus *bus;
 
     CPUInstruction currentInstruction;
+
+    Interrupt NMI;
+    Interrupt reset;
+    Interrupt IRQ;
 
     bool HLT;
     int totalCycles;
@@ -85,10 +90,18 @@ private:
     void memoryWrite(Byte value, Address address, bool checkFlags);
     Byte memoryRead(Address address);
 
+    //Cycles
+    void InstructionCycle();
+    void NMICycle();
+    void resetCycle();
+    void IRQCycle();
+
     //Interrupts
-    void NMI();
-    void reset();
-    void IRQ();
+    void executeNMI();
+    void executeReset();
+    void executeIRQ();
+
+    bool interruptsDisabled();
 
     //Official Instructions
     void ADC(Byte operand);    void AND(Byte value);      void ASL(Address address); void BCC();                void BCS();                void BEQ();

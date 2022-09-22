@@ -4,7 +4,6 @@
 #include "stdio.h"
 #include <cstring>
 
-
 CPU::CPU(Bus *bus)
 {
     this->bus = bus;
@@ -13,7 +12,9 @@ CPU::CPU(Bus *bus)
     X = 0;
     Y = 0;
 
-    reset();
+    HLT = false;
+
+    reset.activate();
 }
 
 void CPU::run()
@@ -33,29 +34,47 @@ void CPU::run()
 
 void CPU::executeCycle()
 {
-    //The instruction is decoded only on its first cycle
-    if(currentInstruction.IsExecuted)
+    //If we are in the middle of the execution of an instruction, we keep executing it
+    if(!currentInstruction.IsExecuted)
     {
-        currentInstruction = decodeInstruction();
-        printCPUState();
+        InstructionCycle();
     }
-
-    //We simulate one cycle
-    currentInstruction.Cycles--;
-    totalCycles++;
-
-    //Once we have simulated all the instruction cycles, we execute the whole instruction in the last cycle
-    if(currentInstruction.Cycles == 0)
+    else
     {
-        executeInstruction();
-        currentInstruction.IsExecuted = true;
+        //If the instruction is finished, we check if we have any pending interrupts.
 
-        //The pc is only updated if the instruction is not a branch instruction
-        if(!currentInstruction.jumpInstruction)
+        //If there is a pending IRQ, but interrupts are disabled, we cancel the IRQ.
+        if(interruptsDisabled() && IRQ.isPending)
+            IRQ.cancel();
+
+        //If there are more than one pending interrupts, we execute only one of them following the priority: Reset > NMI > IRQ
+        if(reset.isPending)
         {
-            pc+=currentInstruction.Bytes;
+            resetCycle();
+
+            if(NMI.isPending)
+                NMI.cancel();
+
+            if(IRQ.isPending)
+                IRQ.cancel();
         }
+        else if(NMI.isPending)
+        {
+            NMICycle();
+
+            if(IRQ.isPending)
+                IRQ.cancel();
+        }
+        else if(IRQ.isPending)
+        {
+            IRQCycle();
+        }
+        //If there are not any pending interrupts, and the current instruction is executed we start executing the next instruction
+        else InstructionCycle();
     }
+
+    //We increase the totalCycles counter
+    totalCycles++;
 }
 
 void CPU::executeInstruction()
@@ -3133,8 +3152,93 @@ Byte CPU::memoryRead(Address address)
     return bus->Read(address);
 }
 
+/*Cycles*/
+void CPU::InstructionCycle()
+{
+    //The instruction is decoded only on its first cycle
+    if(currentInstruction.IsExecuted)
+    {
+        currentInstruction = decodeInstruction();
+        printCPUState();
+    }
+
+    //We simulate one cycle
+    currentInstruction.Cycles--;
+
+    //Once we have simulated all the instruction cycles, we execute the whole instruction in the last cycle
+    if(currentInstruction.Cycles == 0)
+    {
+        executeInstruction();
+        currentInstruction.IsExecuted = true;
+
+        //The pc is only updated if the instruction is not a branch instruction
+        if(!currentInstruction.jumpInstruction)
+        {
+            pc+=currentInstruction.Bytes;
+        }
+    }
+}
+
+void CPU::NMICycle()
+{
+    if(NMI.cycles == 7)
+    {
+        printCPUState();
+    }
+
+    //We simulate one cycle
+    NMI.cycles--;
+
+    //Once we have simulated all the NMI cycles, we execute the whole interrupt routine
+    if(NMI.cycles == 0)
+    {
+        NMI.isPending = false;
+        printf("EJECUTO NMI\n");
+        executeNMI();
+    }
+}
+
+void CPU::resetCycle()
+{
+    //On the first cycle we restart the totalCycle counter
+    if(reset.cycles == 7)
+    {
+        totalCycles = 0;
+    }
+
+    //We simulate one cycle
+    reset.cycles--;
+
+    //Once we hace simulated all the reset cycles, we execute the whole reset routine
+    if(reset.cycles == 0)
+    {
+        reset.isPending = false;
+        printf("EJECUTO RESET\n");
+        executeReset();
+    }
+}
+
+void CPU::IRQCycle()
+{
+    if(IRQ.cycles == 7)
+    {
+        printCPUState();
+    }
+
+    //We simulate one cycle
+    IRQ.cycles--;
+
+    //Once we have simulated all the IRQ cycles, we execute the whole interrupt routine
+    if(IRQ.cycles == 0)
+    {
+        IRQ.isPending = false;
+        printf("EJECUTO IRQ\n");
+        executeIRQ();
+    }
+}
+
 /*Interrupts*/
-void CPU::NMI()
+void CPU::executeNMI()
 {
     Byte ADL = memoryRead(0xFFFA);
     Byte ADH = memoryRead(0xFFFB);
@@ -3146,7 +3250,7 @@ void CPU::NMI()
     pc = Utils::joinBytes(ADH,ADL);
 }
 
-void CPU::reset()
+void CPU::executeReset()
 {
 //    Byte ADL = memoryRead(0xFFFC);
 //    Byte ADH = memoryRead(0xFFFD);
@@ -3156,13 +3260,10 @@ void CPU::reset()
     sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
     P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
 
-    HLT = false;
-
     currentInstruction = CPUInstruction();
-    totalCycles = 7;
 }
 
-void CPU::IRQ()
+void CPU::executeIRQ()
 {
     Byte ADL = memoryRead(0xFFFE);
     Byte ADH = memoryRead(0xFFFF);
@@ -3172,6 +3273,11 @@ void CPU::IRQ()
     set_I_Flag(true);
 
     pc = Utils::joinBytes(ADH,ADL);
+}
+
+bool CPU::interruptsDisabled()
+{
+    return I_FlagSet();
 }
 
 /*Official Instructions*/

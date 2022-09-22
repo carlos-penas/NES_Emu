@@ -23,6 +23,7 @@ SOURCES += \
         cartridge.cpp \
         cpu.cpp \
         cpuinstruction.cpp \
+        interrupt.cpp \
         main.cpp \
         ppu.cpp \
         utils.cpp
@@ -43,6 +44,7 @@ HEADERS += \
     cpu.h \
     cpuOpCodes.h \
     cpuinstruction.h \
+    interrupt.h \
     ppu.h \
     types.h \
     utils.h
