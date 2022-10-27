@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "stdio.h"
 #include <cstring>
+#include <unistd.h>
 
 CPU::CPU(Bus *bus)
 {
@@ -14,6 +15,8 @@ CPU::CPU(Bus *bus)
 
     HLT = false;
 
+    readyToPrint = false;
+
     reset.activate();
 }
 
@@ -21,6 +24,8 @@ void CPU::run()
 {
     while(!HLT)
     {
+        if(totalCycles == 10000)
+            HLT =true;
         executeCycle();
     }
     printf("\nHalting the system...\n\n");
@@ -1596,6 +1601,11 @@ void CPU::notImplementedInstruction()
     HLT = true;
 }
 
+void CPU::disconnectBUS()
+{
+    bus = NULL;
+}
+
 CPUInstruction CPU::decodeInstruction()
 {
     Byte opCode = memoryRead(pc);
@@ -1608,112 +1618,112 @@ CPUInstruction CPU::decodeInstruction()
     switch (opCode){
     case opCodes::BRK:
     {
-        return CPUInstruction(opCode,7,true);
+        return CPUInstruction(opCode,7,true, "BRK");
     }
     case opCodes::ORA_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ORA IX");
     }
     case 0x03:
     {
         //Illegal: SLO_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "SLO IX");
     }
     case 0x04:
     {
         //Illegal: DOP
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "DOP");
     }
     case opCodes::ORA_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "ORA ZP");
     }
     case opCodes::ASL_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "ASL ZP");
     }
     case 0x07:
     {
         //Illegal: SLO_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "SLO ZP");
     }
     case opCodes::PHP:
     {
-        return CPUInstruction(opCode,3,false);
+        return CPUInstruction(opCode,3,false, "PHP");
     }
     case opCodes::ORA_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "ORA I");
     }
     case opCodes::ASL_A:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "ASL A");
     }
     case 0x0C:
     {
         //Illegal: TOP
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "TOP");
     }
     case opCodes::ORA_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "ORA ABS");
     }
     case opCodes::ASL_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "ASL ABS");
     }
     case 0x0F:
     {
         //Illegal: SLO_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "SLO ABS");
     }
     case opCodes::BPL:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(N_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BPL");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BPL");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BPL");
     }
     case opCodes::ORA_IY:
     {
-        return CPUInstruction(opCode,data1,5,false); //Según el manual son siempre 5 ciclos, aunque cruces página???
+        return CPUInstruction(opCode,data1,5,false, "ORA IY"); //Según el manual son siempre 5 ciclos, aunque cruces página???
     }
     case 0x13:
     {
         //Illegal: SLO_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "SLO IY");
     }
     case 0x14:
     {
         //Illegal: DOP
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP");
     }
     case opCodes::ORA_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "ORA ZP X");
     }
     case opCodes::ASL_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ASL ZP X");
     }
     case 0x17:
     {
         //Illegal: SLO_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "SLO ZP X");
     }
     case opCodes::CLC:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "CLC");
     }
     case opCodes::ORA_ABS_Y:
     {
@@ -1722,20 +1732,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "ORA ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "ORA ABS Y");
     }
     case 0x1A:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0x1B:
     {
         //Illegal: SLO_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "SLO ABS Y");
     }
     case 0x1C:
     {
@@ -1745,10 +1755,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::ORA_ABS_X:
     {
@@ -1757,126 +1767,126 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "ORA ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "ORA ABS X");
     }
     case opCodes::ASL_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "ASL ABS X");
     }
     case 0x1F:
     {
         //Illegal: SLO_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "SLO ABS X");
     }
     case opCodes::JSR:
     {
-        return CPUInstruction(opCode,data1,data2,6,true);
+        return CPUInstruction(opCode,data1,data2,6,true, "JSR");
     }
     case opCodes::AND_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false , "AND IX");
     }
     case 0x23:
     {
         //Illegal: RLA_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "RLA IX");
     }
     case opCodes::BIT_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "BIT ZP");
     }
     case opCodes::AND_ZP:
     {
-      return CPUInstruction(opCode,data1,3,false);
+      return CPUInstruction(opCode,data1,3,false, "AND ZP");
     }
     case opCodes::ROL_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "ROL ZP");
     }
     case 0x27:
     {
         //Illegal: RLA_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "RLA ZP");
     }
     case opCodes::PLP:
     {
-        return CPUInstruction(opCode,4,false);
+        return CPUInstruction(opCode,4,false, "PLP");
     }
     case opCodes::AND_I:
     {
-        return  CPUInstruction(opCode,data1,2,false);
+        return  CPUInstruction(opCode,data1,2,false, "AND I");
     }
     case opCodes::ROL_A:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "ROL A");
     }
     case opCodes::BIT_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "BIT ABS");
     }
     case opCodes::AND_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "AND ABS");
     }
     case opCodes::ROL_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "ROL ABS");
     }
     case 0x2F:
     {
         //Illegal: RLA_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "RLA ABS");
     }
     case opCodes::BMI:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(!N_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BMI");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BMI");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BMI");
     }
     case opCodes::AND_IY:
     {
-        return CPUInstruction(opCode,data1,5,false); //Parece que son 5 aunque cruces página???
+        return CPUInstruction(opCode,data1,5,false, "AND IY"); //Parece que son 5 aunque cruces página???
     }
     case 0x33:
     {
         //Illegal: RLA_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "RLA IY");
     }
     case 0x34:
     {
         //Illegal: DOP_ZP_X
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP ZP X");
     }
     case opCodes::AND_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "AND ZP X");
     }
     case opCodes::ROL_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ROL ZP X");
     }
     case 0x37:
     {
         //Illegal: RLA_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "RLA ZP X");
     }
     case opCodes::SEC:
     {
-        return  CPUInstruction(opCode,2,false);
+        return  CPUInstruction(opCode,2,false, "SEC");
     }
     case opCodes::AND_ABS_Y:
     {
@@ -1885,20 +1895,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "AND ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "AND ABS Y");
     }
     case 0x3A:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0x3B:
     {
         //Illegal: RLA_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "RLA ABS Y");
     }
     case 0x3C:
     {
@@ -1908,10 +1918,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::AND_ABS_X:
     {
@@ -1920,96 +1930,96 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "AND ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "AND ABS X");
     }
     case opCodes::ROL_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "ROL ABS X");
     }
     case 0x3F:
     {
         //Illegal: RLA_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "RLA ABS X");
     }
     case opCodes::RTI:
     {
-        return CPUInstruction(opCode,6,true);
+        return CPUInstruction(opCode,6,true, "RTI");
     }
     case opCodes::EOR_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "EOR IX");
     }
     case 0x43:
     {
         //Illegal: SRE_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "SRE IX");
     }
     case 0x44:
     {
         //Illegal: DOP_ZP
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "DOP ZP");
     }
     case opCodes::EOR_ZP:
     {
-      return CPUInstruction(opCode,data1,3,false);
+      return CPUInstruction(opCode,data1,3,false, "EOR ZP");
     }
     case opCodes::LSR_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "LSR ZP");
     }
     case 0x47:
     {
         //Illegal: SRE_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "SRE ZP");
     }
     case opCodes::PHA:
     {
-        return CPUInstruction(opCode,3,false);
+        return CPUInstruction(opCode,3,false, "PHA");
     }
     case opCodes::EOR_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "EOR I");
     }
     case opCodes::LSR_A:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "LSR A");
     }
     case opCodes::JMP_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,3,true);
+        return CPUInstruction(opCode,data1,data2,3,true, "JMP ABS");
     }
     case opCodes::EOR_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "EOR ABS");
     }
     case opCodes::LSR_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "LSR ABS");
     }
     case 0x4F:
     {
         //Illegal: SRE_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "SRE ABS");
     }
     case opCodes::BVC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(V_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BVC");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BVC");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BVC");
     }
     case opCodes::EOR_IY:
     {
@@ -2018,33 +2028,33 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "EOR IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "EOR IY");
     }
     case 0x53:
     {
         //Illegal: SRE_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "SRE IY");
     }
     case 0x54:
     {
         //Illegal: DOP_ZP_X
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP ZP X");
     }
     case opCodes::EOR_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "EOR ZP X");
     }
     case opCodes::LSR_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "LSR ZP X");
     }
     case 0x57:
     {
         //Illegal: SRE_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "SRE ZP X");
     }
     case opCodes::EOR_ABS_Y:
     {
@@ -2053,20 +2063,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "EOR ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "EOR ABS Y");
     }
     case 0x5A:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0x5B:
     {
         //Illegal: SRE_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "SRE ABS Y");
     }
     case 0x5C:
     {
@@ -2076,10 +2086,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::EOR_ABS_X:
     {
@@ -2088,96 +2098,96 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "EOR ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "EOR ABS X");
     }
     case opCodes::LSR_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "LSR ABS X");
     }
     case 0x5F:
     {
         //Illegal: SRE_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "SRE ABS X");
     }
     case opCodes::RTS:
     {
-        return CPUInstruction(opCode,6,true);
+        return CPUInstruction(opCode,6,true, "RTS");
     }
     case opCodes::ADC_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ADC IX");
     }
     case 0x63:
     {
         //Illegal: RRA_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "RRA IX");
     }
     case 0x64:
     {
         //Illegal: DOP_ZP
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "DOP ZP");
     }
     case opCodes::ADC_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "ADC ZP");
     }
     case opCodes::ROR_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "ROR ZP");
     }
     case 0x67:
     {
         //Illegal: RRA_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "RRA ZP");
     }
     case opCodes::PLA:
     {
-        return CPUInstruction(opCode,4,false);
+        return CPUInstruction(opCode,4,false, "PLA");
     }
     case opCodes::ADC_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "ADC I");
     }
     case opCodes::ROR_A:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "ROR A");
     }
     case opCodes::JMP_I:
     {
-        return CPUInstruction(opCode,data1,data2,5,true);
+        return CPUInstruction(opCode,data1,data2,5,true, "JMP I");
     }
     case opCodes::ADC_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "ADC ABS");
     }
     case opCodes::ROR_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "ROR ABS");
     }
     case 0x6F:
     {
         //Illegal: RRA_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "RRA ABS");
     }
     case opCodes::BVS:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(!V_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BVS");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BVS");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BVS");
     }
     case opCodes::ADC_IY:
     {
@@ -2186,20 +2196,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "ADC IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "ADC IY");
     }
     case 0x73:
     {
         //Illegal: RRA_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "RRA IY");
     }
     case 0x74:
     {
         //Illegal: DOP_ZP_X
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP ZP X");
     }
     case 0x7C:
     {
@@ -2209,27 +2219,27 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::ADC_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "ADC ZP X");
     }
     case opCodes::ROR_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ROR ZP X");
     }
     case 0x77:
     {
         //Illegal: RRA_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "RRA ZP X");
     }
     case opCodes::SEI:
     {
-        return  CPUInstruction(opCode,2,false);
+        return  CPUInstruction(opCode,2,false, "SEI");
     }
     case opCodes::ADC_ABS_Y:
     {
@@ -2238,20 +2248,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "ADC ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "ADC ABS Y");
     }
     case 0x7A:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0x7B:
     {
         //Illegal: RRA_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "RRA ABS Y");
     }
     case opCodes::ADC_ABS_X:
     {
@@ -2260,209 +2270,209 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "ADC ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "ADC ABS X");
     }
     case opCodes::ROR_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "ROR ABS X");
     }
     case 0x7F:
     {
         //Illegal: RRA_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "RRA ABS X");
     }
     case 0x80:
     {
         //Illegal: DOP
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "DOP");
     }
     case opCodes::STA_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "STA IX");
     }
     case 0x83:
     {
         //Illegal: SAX_IX
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "SAX IX");
     }
     case opCodes::STY_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "STY ZP");
     }
     case opCodes::STA_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "STA ZP");
     }
     case opCodes::STX_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "STX ZP");
     }
     case 0x87:
     {
         //Illegal: SAX_ZP
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "SAX ZP");
     }
     case opCodes::DEY:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "DEY");
     }
     case opCodes::TXA:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TXA");
     }
     case opCodes::STY_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "STY ABS");
     }
     case opCodes::STA_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "STA ABS");
     }
     case opCodes::STX_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "STX ABS");
     }
     case 0x8F:
     {
         //Illegal: SAX_ABS
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "SAX ABS");
     }
     case opCodes::BCC:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(C_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BCC");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BCC");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BCC");
     }
     case opCodes::STA_IY:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "STA IY");
     }
     case opCodes::STY_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "STY ZP X");
     }
     case opCodes::STA_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "STA ZP X");
     }
     case opCodes::STX_ZP_Y:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "STX ZP Y");
     }
     case 0x97:
     {
         //Illegal: SAX_ZP_Y
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "SAX ZP Y");
     }
     case opCodes::TYA:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TYA");
     }
     case opCodes::STA_ABS_Y:
     {
-        return CPUInstruction(opCode,data1,data2,5,false);
+        return CPUInstruction(opCode,data1,data2,5,false, "STA ABS Y");
     }
     case opCodes::TXS:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TXS");
     }
     case opCodes::STA_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,5,false);
+        return CPUInstruction(opCode,data1,data2,5,false, "STA ABS X");
     }
     case opCodes::LDY_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "LDY I");
     }
     case opCodes::LDA_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "LDA IX");
     }
     case opCodes::LDX_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "LDX I");
     }
     case 0xA3:
     {
         //Illegal: LAX_IX
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "LAX IX");
     }
     case opCodes::LDY_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "LDY ZP");
     }
     case opCodes::LDA_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "LDA ZP");
     }
     case opCodes::LDX_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "LDX ZP");
     }
     case 0xA7:
     {
         //Illegal: LAX_ZP
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "LAX ZP");
     }
     case opCodes::TAY:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TAY");
     }
     case opCodes::LDA_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "LDA I");
     }
     case opCodes::TAX:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TAX");
     }
     case opCodes::LDY_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "LDY ABS");
     }
     case opCodes::LDA_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "LDA ABS");
     }
     case opCodes::LDX_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "LDX ABS");
     }
     case 0xAF:
     {
         //Illegal: LAX_ABS
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "LAX ABS");
     }
     case opCodes::BCS:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(!C_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BCS");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BCS");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BCS");
     }
     case opCodes::LDA_IY:
     {
@@ -2471,10 +2481,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "LDA IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "LDA IY");
     }
     case 0xB3:
     {
@@ -2484,31 +2494,31 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "LAX IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "LAX IY");
     }
     case opCodes::LDY_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "LDT ZP X");
     }
     case opCodes::LDA_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "LDA ZP X");
     }
     case opCodes::LDX_ZP_Y:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "LDX ZP Y");
     }
     case 0xB7:
     {
         //Illegal: LAX_ZP_Y
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "LAX ZP Y");
     }
     case opCodes::CLV:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "CLV");
     }
     case opCodes::LDA_ABS_Y:
     {
@@ -2517,14 +2527,14 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "LDA ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "LDA ABS Y");
     }
     case opCodes::TSX:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "TSX");
     }
     case opCodes::LDY_ABS_X:
     {
@@ -2533,10 +2543,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "LDY ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "LDY ABS X");
     }
     case opCodes::LDA_ABS_X:
     {
@@ -2545,10 +2555,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "LDA ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "LDA ABS X");
     }
     case opCodes::LDX_ABS_Y:
     {
@@ -2557,10 +2567,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "LDX ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "LDX ABS Y");
     }
     case 0xBF:
     {
@@ -2570,86 +2580,86 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "LAX ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "LAX ABS Y");
     }
     case opCodes::CPY_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "CPY I");
     }
     case opCodes::CMP_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "CMP IX");
     }
     case 0xC3:
     {
         //Illegal: DCP_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "DCP IX");
     }
     case opCodes::CPY_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "CPY ZP");
     }
     case opCodes::CMP_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "CMP ZP");
     }
     case opCodes::DEC_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "DEC ZP");
     }
     case 0xC7:
     {
         //Illegal: DCP_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "DCP ZP");
     }
     case opCodes::INY:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "INY");
     }
     case opCodes::CMP_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "CMP I");
     }
     case opCodes::DEX:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "DEX");
     }
     case opCodes::CPY_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "CPY ABS");
     }
     case opCodes::CMP_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "CMP ABS");
     }
     case opCodes::DEC_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "DEC ABS");
     }
     case 0xCF:
     {
         //Illegal: DCP_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "DCP ABS");
     }
     case opCodes::BNE:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(Z_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BNE");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BNE");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BNE");
     }
     case opCodes::CMP_IY:
     {
@@ -2658,37 +2668,37 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "CMP IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "CMP IY");
     }
     case 0xD3:
     {
         //Illegal: DCP_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "DCP IY");
     }
     case 0xD4:
     {
         //Illegal: DOP_ZP_X
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP ZP X");
     }
     case opCodes::CMP_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "CMP ZP X");
     }
     case opCodes::DEC_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "DEC ZP X");
     }
     case 0xD7:
     {
         //Illegal: DCP_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "DCP ZP X");
     }
     case opCodes::CLD:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "CLD");
     }
     case opCodes::CMP_ABS_Y:
     {
@@ -2697,20 +2707,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "CMP ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "CMP ABS Y");
     }
     case 0xDB:
     {
         //Illegal: DCP_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "DCP ABS Y");
     }
     case 0xDA:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0xDC:
     {
@@ -2720,10 +2730,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::CMP_ABS_X:
     {
@@ -2732,100 +2742,100 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "CMP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "CMP ABS X");
     }
     case opCodes::DEC_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "DEC ABS X");
     }
     case 0xDF:
     {
         //Illegal: DCP_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "DCP ABS X");
     }
     case opCodes::CPX_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "CPX I");
     }
     case opCodes::SBC_IX:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "SBC IX");
     }
     case 0xE3:
     {
         //Illegal: ISC_ABS_IX
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "ISC ABS IX");
     }
     case opCodes::CPX_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "CPX ZP");
     }
     case opCodes::SBC_ZP:
     {
-        return CPUInstruction(opCode,data1,3,false);
+        return CPUInstruction(opCode,data1,3,false, "SBC ZP");
     }
     case opCodes::INC_ZP:
     {
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "INC ZP");
     }
     case 0xE7:
     {
         //Illegal: ISC_ZP
-        return CPUInstruction(opCode,data1,5,false);
+        return CPUInstruction(opCode,data1,5,false, "ISC ZP");
     }
     case opCodes::INX:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "INX");
     }
     case opCodes::SBC_I:
     {
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "SBC I");
     }
     case opCodes::NOP:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0xEB:
     {
         //Illegal: SBC_I
-        return CPUInstruction(opCode,data1,2,false);
+        return CPUInstruction(opCode,data1,2,false, "SBC I");
     }
     case opCodes::CPX_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "CPX ABS");
     }
     case opCodes::SBC_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,4,false);
+        return CPUInstruction(opCode,data1,data2,4,false, "SBC ABS");
     }
     case opCodes::INC_ABS:
     {
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "INC ABS");
     }
     case 0xEF:
     {
         //Illegal: ISC_ABS
-        return CPUInstruction(opCode,data1,data2,6,false);
+        return CPUInstruction(opCode,data1,data2,6,false, "ISC ABS");
     }
     case opCodes::BEQ:
     {
         //If no branch occurs, the instruction only takes 2 cycles
         if(!Z_FlagSet())
         {
-            return  CPUInstruction(opCode,data1,2,false);
+            return  CPUInstruction(opCode,data1,2,false, "BEQ");
         }
 
         Address newAddress = relativeAddress(data1) + 2;
 
         if(samePage(pc+2,newAddress))
             //If the branch occurs to the same page, the instruction takes 3 cycles
-            return CPUInstruction(opCode,data1,3,false);
+            return CPUInstruction(opCode,data1,3,false, "BEQ");
         else
             //If the branch occurs to another page, the instruction takes 4 cycles
-            return CPUInstruction(opCode,data1,4,false);
+            return CPUInstruction(opCode,data1,4,false, "BEQ");
     }
     case opCodes::SBC_IY:
     {
@@ -2834,37 +2844,37 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = indirectIndexedAddress(data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,5,false);
+            return CPUInstruction(opCode,data1,5,false, "SBC IY");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,6,false);
+            return CPUInstruction(opCode,data1,6,false, "SBC IY");
     }
     case 0xF3:
     {
         //Illegal: ISC_IY
-        return CPUInstruction(opCode,data1,8,false);
+        return CPUInstruction(opCode,data1,8,false, "ISC IY");
     }
     case 0xF4:
     {
         //Illegal: DOP_ZP_X
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "DOP ZP X");
     }
     case opCodes::SBC_ZP_X:
     {
-        return CPUInstruction(opCode,data1,4,false);
+        return CPUInstruction(opCode,data1,4,false, "SBC ZP X");
     }
     case opCodes::INC_ZP_X:
     {
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "INC ZP X");
     }
     case 0xF7:
     {
         //Illegal: ISC_ZP_X
-        return CPUInstruction(opCode,data1,6,false);
+        return CPUInstruction(opCode,data1,6,false, "ISC ZP X");
     }
     case opCodes::SED:
     {
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "SED");
     }
     case opCodes::SBC_ABS_Y:
     {
@@ -2873,20 +2883,20 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&Y);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "SBC ABS Y");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "SBC ABS Y");
     }
     case 0xFA:
     {
         //Illegal: NOP
-        return CPUInstruction(opCode,2,false);
+        return CPUInstruction(opCode,2,false, "NOP");
     }
     case 0xFB:
     {
         //Illegal: ISC_ABS_Y
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "ISC ABS Y");
     }
     case 0xFC:
     {
@@ -2896,10 +2906,10 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "TOP ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "TOP ABS X");
     }
     case opCodes::SBC_ABS_X:
     {
@@ -2908,19 +2918,19 @@ CPUInstruction CPU::decodeInstruction()
         Address addressWithIndex = absoluteIndexedAddress(data2,data1,&X);
 
         if(samePage(addressWithIndex,addressWithoutIndex))
-            return CPUInstruction(opCode,data1,data2,4,false);
+            return CPUInstruction(opCode,data1,data2,4,false, "SBC ABS X");
         else
             //If a page is crossed when calculating the address, the instruction takes one extra cycle
-            return CPUInstruction(opCode,data1,data2,5,false);
+            return CPUInstruction(opCode,data1,data2,5,false, "SBC ABS X");
     }
     case opCodes::INC_ABS_X:
     {
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "INC ABS X");
     }
     case 0xFF:
     {
         //Illegal: ISC_ABS_X
-        return CPUInstruction(opCode,data1,data2,7,false);
+        return CPUInstruction(opCode,data1,data2,7,false, "ISC ABS X");
     }
     default:
         notImplementedInstruction();
@@ -2928,20 +2938,60 @@ CPUInstruction CPU::decodeInstruction()
     }
 }
 
-void CPU::printCPUState()
+QString CPU::stringCPUState()
 {
+    QString cpuState;
+    QString sPC = Utils::hexString16(pc);
+    QString sOpCode = Utils::hexString(currentInstruction.OpCode);
+    QString sData1 = Utils::hexString(currentInstruction.Data1);
+    QString sData2 = Utils::hexString(currentInstruction.Data2);
+    QString sA = Utils::hexString(A);
+    QString sX = Utils::hexString(X);
+    QString sY = Utils::hexString(Y);
+    QString sP = Utils::hexString(P);
+    QString sSP = Utils::hexString(sp);
+    QString sName = formatName(currentInstruction.Name);
+
     if (currentInstruction.Bytes == 1)
     {
-        printf("%04X  %02X                          A:%02X X:%02X Y:%02X P:%02X SP:%02X  CYC:%d\n", pc, currentInstruction.OpCode, A, X, Y, P, sp, totalCycles);
+        cpuState = QString("%1  %2        %8 A:%3 X:%4 Y:%5 P:%6 SP:%7 ").arg(sPC).arg(sOpCode).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
     }
     else if(currentInstruction.Bytes == 2)
     {
-        printf("%04X  %02X %02X                       A:%02X X:%02X Y:%02X P:%02X SP:%02X  CYC:%d\n", pc, currentInstruction.OpCode, currentInstruction.Data1, A, X, Y, P, sp, totalCycles);
+        cpuState = QString("%1  %2 %3     %9 A:%4 X:%5 Y:%6 P:%7 SP:%8 ").arg(sPC).arg(sOpCode).arg(sData1).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
     }
     else
     {
-        printf("%04X  %02X %02X %02X                    A:%02X X:%02X Y:%02X P:%02X SP:%02X  CYC:%d\n", pc, currentInstruction.OpCode, currentInstruction.Data1, currentInstruction.Data2, A, X, Y, P, sp, totalCycles);
+        cpuState = QString("%1  %2 %3 %4  %10 A:%5 X:%6 Y:%7 P:%8 SP:%9 ").arg(sPC).arg(sOpCode).arg(sData1).arg(sData2).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
     }
+
+    return cpuState;
+}
+
+void CPU::activateNMI()
+{
+    NMI.activate();
+}
+
+QString CPU::formatName(QString instructionName)
+{
+    QString filler;
+    if(currentInstruction.Bytes == 1)
+    {
+        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1));
+        return "[" + instructionName + "]" + filler;
+    }
+    if(currentInstruction.Bytes == 2)
+    {
+        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2);
+        return "[" + instructionName + QString(" $%1").arg(Utils::hexString(currentInstruction.Data1)) + "]" + filler;
+    }
+    else
+    {
+        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2);
+        return "[" + instructionName + QString(" $%1%2").arg(Utils::hexString(currentInstruction.Data2)).arg(Utils::hexString(currentInstruction.Data1)) + "]" + filler;
+    }
+
 }
 
 /*Addressing modes*/
@@ -3159,7 +3209,7 @@ void CPU::InstructionCycle()
     if(currentInstruction.IsExecuted)
     {
         currentInstruction = decodeInstruction();
-        printCPUState();
+        readyToPrint = true;
     }
 
     //We simulate one cycle
@@ -3168,6 +3218,7 @@ void CPU::InstructionCycle()
     //Once we have simulated all the instruction cycles, we execute the whole instruction in the last cycle
     if(currentInstruction.Cycles == 0)
     {
+        //usleep(800000);
         executeInstruction();
         currentInstruction.IsExecuted = true;
 
@@ -3181,11 +3232,6 @@ void CPU::InstructionCycle()
 
 void CPU::NMICycle()
 {
-    if(NMI.cycles == 7)
-    {
-        printCPUState();
-    }
-
     //We simulate one cycle
     NMI.cycles--;
 
@@ -3220,11 +3266,6 @@ void CPU::resetCycle()
 
 void CPU::IRQCycle()
 {
-    if(IRQ.cycles == 7)
-    {
-        printCPUState();
-    }
-
     //We simulate one cycle
     IRQ.cycles--;
 
@@ -3252,11 +3293,11 @@ void CPU::executeNMI()
 
 void CPU::executeReset()
 {
-//    Byte ADL = memoryRead(0xFFFC);
-//    Byte ADH = memoryRead(0xFFFD);
-//    pc = Utils::joinBytes(ADH,ADL);
+    Byte ADL = memoryRead(0xFFFC);
+    Byte ADH = memoryRead(0xFFFD);
+    pc = Utils::joinBytes(ADH,ADL);
 
-    pc = 0xC000;    //Para nestest empieza aquí.
+    //pc = 0xC000;    //Para nestest empieza aquí.
     sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
     P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
 
@@ -3584,7 +3625,8 @@ void CPU::RTI()
 
 void CPU::RTS()
 {
-    if(sp !=0xFD)
+    //if(sp !=0xFD)
+    if(sp !=0xFF)
     {
         pc = pullFromStack_2Bytes();
         pc++;
@@ -3720,7 +3762,6 @@ void CPU::TOP()
 {
     NOP();
 }
-
 
 
 

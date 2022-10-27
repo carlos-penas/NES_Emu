@@ -17,6 +17,16 @@ public:
 
     void notImplementedInstruction();
 
+    void disconnectBUS();
+
+    QString stringCPUState();
+    uint64_t getCycles() {return totalCycles;};
+
+    void activateNMI();
+
+    bool readyToPrint;
+    bool HLT;
+
 private:
     //General purpose registers
     Register8 A;
@@ -41,12 +51,11 @@ private:
     Interrupt reset;
     Interrupt IRQ;
 
-    bool HLT;
     int totalCycles;
 
     CPUInstruction decodeInstruction();
 
-    void printCPUState();
+    QString formatName(QString instructionName);
 
     //Addressing modes
     Address zeroPageAddress(Byte ADL);

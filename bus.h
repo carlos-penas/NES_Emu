@@ -2,12 +2,17 @@
 #define BUS_H
 #include "types.h"
 #include "cartridge.h"
+#include "ppu.h"
+
 class Bus
 {
 public:
     Bus();
 
     void connectCartridge(Cartridge *cartridge);
+    void disconnectCartridge();
+    void connectPPU(PPU *ppu);
+    void disconnectPPU();
 
     void Write(Byte value, Address address);
     Byte Read(Address address);
@@ -16,10 +21,12 @@ public:
 private:
     //Memory Map (64KB)
     Register8 RAM[0x800];           //  2 KB
-    Register8 PPU_Register[8];      //  8 B
+    //Register8 PPU_Register[8];      //  8 B
     Register8 APU_IO[0x18];         // 24 B
     Register8 APU_Test[8];          //  8 B
     Cartridge *cartridge;           // 49 KB
+
+    PPU *ppu;
 };
 
 #endif // BUS_H

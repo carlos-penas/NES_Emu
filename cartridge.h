@@ -51,6 +51,7 @@ class Cartridge
 {
 public:
     Cartridge();
+    ~Cartridge();
     bool loadROM(string path);
     void CPU_Write(Byte value, Address address);
     Byte CPU_Read(Address address);

@@ -25,6 +25,7 @@ SOURCES += \
         cpuinstruction.cpp \
         interrupt.cpp \
         main.cpp \
+        nes.cpp \
         ppu.cpp \
         utils.cpp
 
@@ -45,6 +46,7 @@ HEADERS += \
     cpuOpCodes.h \
     cpuinstruction.h \
     interrupt.h \
+    nes.h \
     ppu.h \
     types.h \
     utils.h

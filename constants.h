@@ -11,7 +11,11 @@ const unsigned int PICTURE_HEIGHT = 240;
 const unsigned char PIXEL_SIZE = 4;         //Each pixel takes up 4 bytes {R,G,B,A}
 
 //Resolution multiplyer
-const unsigned char RES_MULTIPLYER = 5;     //Factor to multiply the original resolution
+const unsigned char RES_MULTIPLYER = 2;     //Factor to multiply the original resolution
+
+//Nametable
+const int BACKGROUND_COLS = 32;             //Size of the background grid of patterns
+const int BACKGROUND_ROWS = 30;             //
 
 
 //Pattern Table

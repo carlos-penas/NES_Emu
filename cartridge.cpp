@@ -10,6 +10,12 @@ Cartridge::Cartridge()
 
 }
 
+Cartridge::~Cartridge()
+{
+    delete mapper;
+    mapper = NULL;
+}
+
 bool Cartridge::loadROM(string path)
 {
     ifstream file(path);
