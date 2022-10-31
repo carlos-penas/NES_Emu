@@ -185,7 +185,6 @@ void PPU::drawNameTable() //Byte *pixels parametro.
 
         if(!ya)
         {
-            printf("TABLA ATRIBUTOS:\n");
             for(int gridRow = 0; gridRow < BACKGROUND_ROWS; gridRow++)
             {
                 for(int gridCol = 0; gridCol < BACKGROUND_COLS; gridCol ++)
@@ -212,7 +211,6 @@ void PPU::drawNameTable() //Byte *pixels parametro.
                     //Increment indexes if needed
                     nametableIndex++;
 
-                    //printf("(%d,%d) = %d, b[%d]\n",gridRow,gridCol,attributeTableIndex,blockIndex);
                     if(!((gridCol+1) % 4))
                         attributeTableIndex++;
 
@@ -240,10 +238,15 @@ void PPU::drawNameTable() //Byte *pixels parametro.
 
     delete[] pixels;
 
-//            for(int i = 0; i< 64; i++)
-//            {
-//                printf("Valor [%04X]: %02X\n",0x23C0 + i,memoryRead(0x23C0 + i));
-//            }
+//    printf("OAM:\n");
+//    for(int i = 0; i < 256; i++)
+//    {
+//        printf("OAM[%02X] = %02X\n",i,OAM[i]);
+//        if(!((i+1) % 4))
+//        {
+//            printf("\n");
+//        }
+//    }
 }
 void PPU::loadPattern(int tableRow, int tableCol, Byte *pixels)
 {
@@ -362,10 +365,20 @@ Byte PPU::memoryRead(Address address)
     //Nametables and their mirrors
     if(address >= 0x2000 && address <= 0x3EFF)
     {
+        if(cartridge->getMirroringType() == HorizontalMirroring)
+        {
 #ifdef PRINTPPU
-        printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 0x03, (address & 0x3FF));
+            printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
 #endif
-        return NameTables[(address >> 10) & 0x03][address & 0x3FF];
+            return NameTables[(address >> 11) & 1][address & 0x03FF];
+        }
+        else if(cartridge->getMirroringType() == VerticalMirroring)
+        {
+#ifdef PRINTPPU
+            printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
+#endif
+            return NameTables[(address >> 10) & 1][address & 0x03FF];
+        }
     }
 
     //Pallette Indexes and their mirrors
@@ -531,14 +544,9 @@ Byte PPU::cpuRead(Address address)
     return 0x00;
 }
 
-void PPU::OAM_DMA_Transfer(Byte *cpuAddress)
+void PPU::OAM_DMA_Transfer(Byte value, int index)
 {
-    printf("OAM transfer:\n");
-    for(int i = 0; i < 256; i++)
-    {
-        printf("OAM[%02X] = cpu[%02X]",(OAMADDR + i) & 0xFF,i);
-        //OAM[(OAMADDR + i) & 0xFF] = cpuAddress[i];
-    }
+    OAM[(OAMADDR + index) & 0xFF] = value;
 }
 
 QString PPU::stringPPUState()

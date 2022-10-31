@@ -10,7 +10,7 @@ public:
     bool isPending;
     int cycles;
 
-    void activate();
+    void activate(int cycles);
     void cancel();
 };
 

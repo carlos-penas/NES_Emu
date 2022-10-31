@@ -17,7 +17,7 @@ CPU::CPU(Bus *bus)
 
     readyToPrint = false;
 
-    reset.activate();
+    reset.activate(7);
 }
 
 void CPU::run()
@@ -52,16 +52,25 @@ void CPU::executeCycle()
         if(interruptsDisabled() && IRQ.isPending)
             IRQ.cancel();
 
-        //If there are more than one pending interrupts, we execute only one of them following the priority: Reset > NMI > IRQ
+        //If there are more than one pending interrupts, we execute only one of them following the priority: Reset > DMA > NMI > IRQ
         if(reset.isPending)
         {
             resetCycle();
+
+            if(OAM_DMA.isPending)
+                OAM_DMA.cancel();
 
             if(NMI.isPending)
                 NMI.cancel();
 
             if(IRQ.isPending)
                 IRQ.cancel();
+        }
+        else if(OAM_DMA.isPending)
+        {
+            OAM_DMACycle();
+
+            //We don't cancel the other interrupts in this case, just wait until the ~500 cycles of the DMA Transfer are finished.
         }
         else if(NMI.isPending)
         {
@@ -2970,7 +2979,7 @@ QString CPU::stringCPUState()
 
 void CPU::activateNMI()
 {
-    NMI.activate();
+    NMI.activate(7);
 }
 
 QString CPU::formatName(QString instructionName)
@@ -3194,6 +3203,14 @@ void CPU::memoryWrite(Byte value, Address address, bool checkFlags)
         set_N_Flag(value >> 7);
     }
 
+    if(address == 0x4014)
+    {
+        if(totalCycles %2)
+            OAM_DMA.activate(514);      //Odd cycle
+        else
+            OAM_DMA.activate(513);      //Even cycle
+    }
+
     bus->Write(value,address);
 }
 
@@ -3276,6 +3293,14 @@ void CPU::IRQCycle()
         printf("EJECUTO IRQ\n");
         executeIRQ();
     }
+}
+
+void CPU::OAM_DMACycle()
+{
+    OAM_DMA.cycles--;
+
+    if(OAM_DMA.cycles == 0)
+        OAM_DMA.isPending = false;
 }
 
 /*Interrupts*/

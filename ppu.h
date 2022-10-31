@@ -51,7 +51,7 @@ public:
     void cpuWrite(Byte value, Address address);
     Byte cpuRead(Address address);
 
-    void OAM_DMA_Transfer(Byte *cpuAddress);
+    void OAM_DMA_Transfer(Byte value, int index);
 
     QString stringPPUState();
 
@@ -60,7 +60,7 @@ public:
 private:
     //Memory map (16KB)
     Cartridge * cartridge;                  //   8 KB
-    Register8 NameTables[4][0x400];         //   4 NameTables of 1KB each
+    Register8 NameTables[2][0x400];         //   4 NameTables of 1KB each
     Register8 PaletteRAMIndexes[0x20];      //  32 Bytes
     Register8 OAM[0x100];                   // 256 Bytes
 
@@ -75,12 +75,7 @@ private:
     Byte color4 [4] = {65, 242, 216,255};
     Byte color3 [4] = {120, 10, 10,255};
 
-//    Byte color1 [4] = {0,0,0,0};
-//    Byte color2 [4] = {64, 64, 64,255};
-//    Byte color3 [4] = {128, 128, 128,255};
-//    Byte color4 [4] = {192, 192, 192,255};
 
-    //Byte NESPallette [256];
     Byte NESPallette [64][4] =
     {
         {84,84,84,255},   {0,30,116,255},   {8,16,144,255},   {48,0,136,255},   {68,0,100,255},   {92,0,48,255},    {84,4,0,255},     {60,24,0,255},    {32,42,0,255},    {8,58,0,255},     {0,64,0,255},     {0,60,0,255},     {0,50,60,255},    {0,0,0,0},        {0,0,0,0},{0,0,0,0},

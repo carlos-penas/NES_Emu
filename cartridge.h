@@ -12,6 +12,11 @@ enum HeaderType{
     v2
 };
 
+enum MirroringType{
+    HorizontalMirroring = 0,
+    VerticalMirroring
+};
+
 
 struct NES_10_Header{
     char signature [4];
@@ -57,10 +62,14 @@ public:
     Byte CPU_Read(Address address);
     Byte* PPU_GetPattern(uint16_t index);
     Byte PPU_Read(Address address);
+
+    MirroringType getMirroringType() {return nametableMirroring;};
 private:
     HeaderType headerType;
     Byte mapperId;
     Mapper *mapper;
+
+    MirroringType nametableMirroring;
 };
 
 #endif // CARTRIDGE_H

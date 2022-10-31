@@ -51,6 +51,8 @@ private:
     Interrupt reset;
     Interrupt IRQ;
 
+    Interrupt OAM_DMA;
+
     int totalCycles;
 
     CPUInstruction decodeInstruction();
@@ -104,6 +106,7 @@ private:
     void NMICycle();
     void resetCycle();
     void IRQCycle();
+    void OAM_DMACycle();
 
     //Interrupts
     void executeNMI();

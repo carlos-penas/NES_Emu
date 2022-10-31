@@ -6,10 +6,10 @@ Interrupt::Interrupt()
     cycles = 0;
 }
 
-void Interrupt::activate()
+void Interrupt::activate(int cycles)
 {
     isPending = true;
-    cycles = 7;
+    this->cycles = cycles;
 }
 
 void Interrupt::cancel()

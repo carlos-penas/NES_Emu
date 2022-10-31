@@ -27,6 +27,8 @@ private:
     Cartridge *cartridge;           // 49 KB
 
     PPU *ppu;
+
+    void OAM_DMA_Transfer(Byte addressH);
 };
 
 #endif // BUS_H

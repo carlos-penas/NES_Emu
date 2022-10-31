@@ -105,6 +105,16 @@ bool Cartridge::loadROM(string path)
         return false;
     }
 
+    if(header.v1.Flags6 & 0x01)
+    {
+        nametableMirroring = VerticalMirroring;
+        printf("Vertical mriroring\n");
+    }
+    else
+    {
+        nametableMirroring = HorizontalMirroring;
+        printf("Horizontal mriroring\n");
+    }
     return true;
 }
 
@@ -128,4 +138,3 @@ Byte Cartridge::PPU_Read(Address address)
 {
     return  mapper->PPU_Read(address);
 }
-

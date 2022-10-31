@@ -40,7 +40,7 @@ void Bus::Write(Byte value, Address address)
     }
 
     //PPU Registers
-    if (address >= 0x2000 && address <= 0x3FFF)
+    else if (address >= 0x2000 && address <= 0x3FFF)
     {
 #ifdef PRINTMEMORY
         printf("Escritura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
@@ -49,23 +49,26 @@ void Bus::Write(Byte value, Address address)
     }
 
     //APU I/O
-    if(address >= 0x4000 && address <= 0x4017)
+    else if(address >= 0x4000 && address <= 0x4017)
     {
 #ifdef PRINTMEMORY
         printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         APU_IO[address & 0x001F] = value;
+
+        if(address == 0x4014)
+            OAM_DMA_Transfer(value);
     }
 
     //APU Test
-    if(address >= 0x4018 && address <= 0x401F)
+    else if(address >= 0x4018 && address <= 0x401F)
     {
         //printf("Escritura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
         APU_Test[address  & 0x0007] = value;
     }
 
     //Cartridge
-    if(address >= 0x4020)
+    else if(address >= 0x4020)
     {
         cartridge->CPU_Write(value,address);
     }
@@ -114,4 +117,14 @@ Byte Bus::Read(Address address)
     }
     printf("Error, direccion de memoria no controlada: %04X\n", address);
     return 0x00; //Nunca debería llegar aquí.
+}
+
+void Bus::OAM_DMA_Transfer(Byte ADH)
+{
+    Address address = Utils::joinBytes(ADH,00);
+    for(int i = 0; i < 256; i++)
+    {
+        Byte value = Read(address + i);
+        ppu->OAM_DMA_Transfer(value,i);
+    }
 }
