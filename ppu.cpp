@@ -323,10 +323,22 @@ void PPU::memoryWrite(Byte value, Address address)
     //Nametables and their mirrors
     if(address >= 0x2000 && address <= 0x3EFF)
     {
+        if(cartridge->getMirroringType() == HorizontalMirroring)
+        {
 #ifdef PRINTPPU
-        printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 0x03, (address & 0x3FF));
+            printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
 #endif
-        NameTables[(address >> 10) & 0x03][address & 0x3FF] = value;
+            NameTables[(address >> 11) & 1][address & 0x03FF] = value;
+        }
+        else if(cartridge->getMirroringType() == VerticalMirroring)
+        {
+#ifdef PRINTPPU
+            printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
+#endif
+            NameTables[(address >> 10) & 1][address & 0x03FF] = value;
+        }
+
+
     }
 
     //Pallette Indexes and their mirrors
