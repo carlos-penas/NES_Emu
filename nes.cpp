@@ -47,8 +47,8 @@ void NES::run()
 {
     //while(!cpu->HLT && systemCycles < 166539 * 3)
     //while(!cpu->HLT && systemCycles < 1814122 * 3)
-    while(!cpu->HLT && systemCycles < 1611539 * 3)
-    //while(!cpu->HLT && systemCycles < 50000)
+    while(!cpu->HLT && systemCycles < 1611539 * 3)        //Para Super mario cargado el menu
+    //while(!cpu->HLT && systemCycles < 10529989 * 3)         //Para Donkey Kong cargado el nivel
     {
         if(!(systemCycles % 3))
         {

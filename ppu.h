@@ -3,9 +3,12 @@
 #include "types.h"
 #include "cartridge.h"
 #include "utils.h"
+//#define SHOWGRAPHICS
 
 //SFML
+#ifdef SHOWGRAPHICS
 #include "Graphics.hpp"
+#endif
 
 enum RegAddress{
     PPUCTRL   = 0x2000,
@@ -18,17 +21,45 @@ enum RegAddress{
     PPUDATA   = 0x2007,
 };
 
-struct AddressRegister{
-    Byte latch;
-    Register16 address;
+union AddressRegister{
+    struct{
+        Register16 tileOffsetX : 5;
+        Register16 tileOffsetY : 5;
+        Register16 nametableX : 1;
+        Register16 nametableY : 1;
+        Register16 pixelOffsetY : 3;
+        Register16 unused : 1;
+    };
+    Register16  value;
 
-    void setLatch() {latch = 1;}
-    void resetLatch() {latch = 0;}
+    struct{
+        Register8 LByte;
+        Register8 HByte;
+    };
+};
 
-    bool latch_isSet() {return latch;}
+union ControlRegister{
+    struct{
+        Register16 nametableX : 1;
+        Register16 nametableY : 1;
+        Register8 VRAMincrement : 1;
+        Register8 spriteAdress : 1;
+        Register8 backgroundAddress : 1;
+        Register8 spriteSize : 1;
+        Register8 MstSlvMode : 1;
+        Register8 generateNMI : 1;
+    };
+    Register8 value;
+};
 
-    void setLowByte(Byte value) {address = Utils::joinBytes(Utils::highByte(address),value);}
-    void setHighByte(Byte value) {address = Utils::joinBytes(value,Utils::lowByte(address));}
+union StatusRegister{
+    struct{
+        Register8 unused : 5;
+        Register8 spriteOverflow : 1;
+        Register8 spriteZeroHit : 1;
+        Register8 VBlank : 1;
+    };
+    Register8 value;
 };
 
 class PPU
@@ -69,7 +100,9 @@ private:
     uint16_t scanline;
 
     //SFML
+#ifdef SHOWGRAPHICS
     sf::RenderWindow window;
+#endif
     Byte color1 [4] = {0,0,0,0};
     Byte color2 [4] = {247, 2, 149,255};
     Byte color4 [4] = {65, 242, 216,255};
@@ -96,20 +129,19 @@ private:
     Byte memoryRead(Address address);
 
     //Registers
-    Register8 PPUCTRL;
-    Register8 PPUSTATUS;
-    Register8 PPUSCROLL;
+    ControlRegister PPUCTRL;
     Register8 PPUMASK;
-    AddressRegister PPUADDR;
+    StatusRegister PPUSTATUS;
     Register8 OAMADDR;
     Register8 OAMDATA;
 
+    //Internal registers operated by PPUADDR and PPUSCroll
+    AddressRegister VRAMAdress;     //(15 bits) --> [v]: Current VRAM address
+    AddressRegister tempVRAMAdress; //(15 bits) --> [t]: Temporary VRAM address. Address of the first tile (top left) that appears on the screen
+    Register8 pixelOffsetX;         //(3 bits)  --> [x]: Fine X scroll
+    Byte addressLatch;              //(1 bit)   --> [w]: Address latch shared by PPUADDR and PPUSCROLL (Conmutador)
+
     Register8 internalBuffer;
-
-    bool PPUCTRL_VRAM_increment();
-    bool PPUCTRL_NMI();
-
-    void PPUSTATUS_SetVBlank(bool set);
 
 };
 

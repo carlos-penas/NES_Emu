@@ -7,6 +7,7 @@
 
 PPU::PPU()
 {
+#ifdef SHOWGRAPHICS
     //Set window actual resolution
     //window.create(sf::VideoMode(PT_TABLE_WIDTH,PT_TABLE_HEIGHT),"Pattern Table");      //Pattern Table
     window.create(sf::VideoMode(PICTURE_WIDTH,PICTURE_HEIGHT),"Nintendo Entertainment System");      //NES screen
@@ -14,12 +15,12 @@ PPU::PPU()
     //Increase window size if needed
     //window.setSize(sf::Vector2u(PT_TABLE_WIDTH*RES_MULTIPLYER,PT_TABLE_HEIGHT*RES_MULTIPLYER));
     window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
+#endif
 
-    PPUADDR.latch = 0;
-    PPUADDR.address = 0;
+
     //PPUSTATUS =0xA0;
-    PPUSTATUS =0x00;
-    PPUCTRL = 0;
+    PPUSTATUS.value =0x00;
+    PPUCTRL.value = 0;
     OAMADDR = 0;
 
     internalBuffer = 0;
@@ -44,14 +45,14 @@ void PPU::executeCycle()
 {
     //At the start of the frame, the Vertical Blank flag is reset
     if(scanline == 1 && cycle == 1)
-        PPUSTATUS_SetVBlank(false);
+        PPUSTATUS.VBlank = 0;
 
 
     //From scanline 241 onwards, the Vertical Blank flag is set
     if(scanline == 241 && cycle == 1)
     {
-        PPUSTATUS_SetVBlank(true);
-        if(PPUCTRL_NMI())
+        PPUSTATUS.VBlank = 1;
+        if(PPUCTRL.generateNMI)
         {
             NMI = true;
         }
@@ -93,63 +94,66 @@ void PPU::drawFrame()
 
 void PPU::drawPatternTable()
 {
+#ifdef SHOWGRAPHICS
     //Create pixel buffer with the appropriate size
-//    Byte *pixels = new Byte[PT_TABLE_WIDTH * PT_TABLE_HEIGHT * PIXEL_SIZE];
+    Byte *pixels = new Byte[PT_TABLE_WIDTH * PT_TABLE_HEIGHT * PIXEL_SIZE];
 
-//    //Create a texture with the same size as the window
-//    sf::Texture pixels_texture;
-//    pixels_texture.create(PT_TABLE_WIDTH, PT_TABLE_HEIGHT);
+    //Create a texture with the same size as the window
+    sf::Texture pixels_texture;
+    pixels_texture.create(PT_TABLE_WIDTH, PT_TABLE_HEIGHT);
 
-//    //Create a sf:Sprite to render the texture in the window
-//    sf::Sprite pixels_sprite(pixels_texture);
-//    bool ya = false;
+    //Create a sf:Sprite to render the texture in the window
+    sf::Sprite pixels_sprite(pixels_texture);
+    bool ya = false;
 
-//    while(window.isOpen())
-//    {
-//        usleep(16666);
-//        sf::Event event;
-//        while (window.pollEvent(event))
-//        {
-//            if(event.type == sf::Event::Closed)
-//                window.close();
-//            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-//                window.close();
-//            }
-//        }
+    while(window.isOpen())
+    {
+        usleep(16666);
+        sf::Event event;
+        while (window.pollEvent(event))
+        {
+            if(event.type == sf::Event::Closed)
+                window.close();
+            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
+                window.close();
+            }
+        }
 
-//        window.clear(sf::Color::Black);
+        window.clear(sf::Color::Black);
 
-//        uint64_t pixelToLoad = 0;
+        uint64_t pixelToLoad = 0;
 
-//        if(!ya)
-//        {
-//            for(int tableRow = 0; tableRow < PT_TABLE_ROWS; tableRow++)
-//            {
-//                for(int tableCol = 0; tableCol < PT_TABLE_COLS; tableCol ++)
-//                {
-//                    //Load each pattern from the Pattern table into the pixel buffer
-//                    loadPattern(tableRow,tableCol,&pixels[pixelToLoad]);
+        if(!ya)
+        {
+            for(int tableRow = 0; tableRow < PT_TABLE_ROWS; tableRow++)
+            {
+                for(int tableCol = 0; tableCol < PT_TABLE_COLS; tableCol ++)
+                {
+                    //Load each pattern from the Pattern table into the pixel buffer
+                    loadPattern(tableRow,tableCol,&pixels[pixelToLoad]);
 
-//                    //Update pixel pointer to the position of the next pattern
-//                    pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
-//                }
-//                //Update pixel pointer to the position of the next pattern (on the next row)
-//                pixelToLoad += PTRN_LNGHT * PT_TABLE_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
-//            }
-//            ya = true;
-//        }
+                    //Update pixel pointer to the position of the next pattern
+                    pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
+                }
+                //Update pixel pointer to the position of the next pattern (on the next row)
+                pixelToLoad += PTRN_LNGHT * PT_TABLE_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
+            }
+            ya = true;
+        }
 
-//        //Update the texture of the sf:Sprite with the pixel buffer
-//        pixels_texture.update(pixels);
-//        window.draw(pixels_sprite);
+        //Update the texture of the sf:Sprite with the pixel buffer
+        pixels_texture.update(pixels);
+        window.draw(pixels_sprite);
 
 
-//        window.display();
-//        }
+        window.display();
+        }
+#endif
 }
 
 void PPU::drawNameTable() //Byte *pixels parametro.
 {
+#ifdef SHOWGRAPHICS
     //Create pixel buffer with the appropriate size
     Byte *pixels = new Byte[PICTURE_WIDTH * PICTURE_HEIGHT * PIXEL_SIZE];
 
@@ -237,6 +241,7 @@ void PPU::drawNameTable() //Byte *pixels parametro.
     }
 
     delete[] pixels;
+#endif
 
 //    printf("OAM:\n");
 //    for(int i = 0; i < 256; i++)
@@ -256,7 +261,7 @@ void PPU::loadPattern(int tableRow, int tableCol, Byte *pixels)
     //Load each row of pixels of the pattern individually
     for(int i = 0; i < PTRN_LNGHT; i++)
     {
-        loadPatternRow(pixels,i,patternIndex,1);
+        loadPatternRow(pixels,i,patternIndex,0);
     }
 }
 
@@ -328,17 +333,15 @@ void PPU::memoryWrite(Byte value, Address address)
 #ifdef PRINTPPU
             printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
 #endif
-            NameTables[(address >> 11) & 1][address & 0x03FF] = value;
+            NameTables[(address >> 11) & 1][address & 0x3FF] = value;
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
 #ifdef PRINTPPU
             printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
 #endif
-            NameTables[(address >> 10) & 1][address & 0x03FF] = value;
+            NameTables[(address >> 10) & 1][address & 0x3FF] = value;
         }
-
-
     }
 
     //Pallette Indexes and their mirrors
@@ -382,14 +385,14 @@ Byte PPU::memoryRead(Address address)
 #ifdef PRINTPPU
             printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
 #endif
-            return NameTables[(address >> 11) & 1][address & 0x03FF];
+            return NameTables[(address >> 11) & 1][address & 0x3FF];
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
 #ifdef PRINTPPU
             printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
 #endif
-            return NameTables[(address >> 10) & 1][address & 0x03FF];
+            return NameTables[(address >> 10) & 1][address & 0x3FF];
         }
     }
 
@@ -415,31 +418,15 @@ Byte PPU::memoryRead(Address address)
     return 0x00;
 }
 
-bool PPU::PPUCTRL_VRAM_increment()
-{
-    return (PPUCTRL & 0b00000100);
-}
-
-bool PPU::PPUCTRL_NMI()
-{
-    return (PPUCTRL & 0b10000000);
-}
-
-void PPU::PPUSTATUS_SetVBlank(bool set)
-{
-    if(set)
-        PPUSTATUS |= 0b10000000;
-    else
-        PPUSTATUS &= 0b01111111;
-}
-
 
 void PPU::cpuWrite(Byte value, Address address)
 {
     switch (address) {
     case RegAddress::PPUCTRL:
     {
-        PPUCTRL = value;
+        PPUCTRL.value = value;
+        tempVRAMAdress.nametableX = PPUCTRL.nametableX;
+        tempVRAMAdress.nametableY = PPUCTRL.nametableY;
         break;
     }
     case RegAddress::PPUMASK:
@@ -461,32 +448,45 @@ void PPU::cpuWrite(Byte value, Address address)
     }
     case RegAddress::PPUSCROLL:
     {
+        if(addressLatch == 0)
+        {
+            tempVRAMAdress.tileOffsetX = value >> 3;
+            pixelOffsetX = value & 0x7;
+            addressLatch = 1;
+        }
+        else //if(addressLatch == 1)
+        {
+            tempVRAMAdress.pixelOffsetY = value & 0x7;
+            tempVRAMAdress.tileOffsetY = value >> 3;
+            addressLatch = 0;
+        }
         break;
     }
     case RegAddress::PPUADDR:
     {
-        if(PPUADDR.latch_isSet())
+        if(addressLatch == 0)
         {
-            PPUADDR.setLowByte(value);
-            PPUADDR.resetLatch();
+            tempVRAMAdress.HByte = value & 0x3F;
+            addressLatch = 1;
         }
-        else //if latch is reset
+        else //if(addressLatch == 1)
         {
-            PPUADDR.setHighByte(value);
-            PPUADDR.setLatch();
+            tempVRAMAdress.LByte = value;
+            VRAMAdress.value = tempVRAMAdress.value;
+            addressLatch = 0;
         }
         break;
     }
     case RegAddress::PPUDATA:
     {
-        //Write the value to the address stored in PPUADDR
-        memoryWrite(value,PPUADDR.address);
+        //Write the value to the current VRAM Address
+        memoryWrite(value,VRAMAdress.value);
 
-        //The address stored in PPUADDR (VRAM address) is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
-        if(PPUCTRL_VRAM_increment())
-            PPUADDR.address += 32;
+        //The current VRAM address is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
+        if(PPUCTRL.VRAMincrement)
+            VRAMAdress.value += 32;
         else
-            PPUADDR.address++;
+            VRAMAdress.value++;
         break;
     }
     default:
@@ -507,9 +507,9 @@ Byte PPU::cpuRead(Address address)
     }
     case RegAddress::PPUSTATUS:
     {
-        Byte result = (PPUSTATUS & 0xE0) | (internalBuffer & 0x1F);
-        PPUADDR.resetLatch();
-        PPUSTATUS_SetVBlank(false);
+        Byte result = (PPUSTATUS.value & 0xE0) | (internalBuffer & 0x1F);
+        PPUSTATUS.VBlank = 0;
+        addressLatch = 0;
         return result;
     }
     case RegAddress::OAMADDR:
@@ -531,11 +531,11 @@ Byte PPU::cpuRead(Address address)
     case RegAddress::PPUDATA:
     {
         //The data is read from the ppu memory map
-        Byte readData = memoryRead(PPUADDR.address);
+        Byte readData = memoryRead(VRAMAdress.value);
         Byte result;
 
         //If the address is within the palette range, we return the read value directly. Otherwise, we return the value of the previous read stored on the internal buffer.
-        if((PPUADDR.address & 0x3FFF) >= 0x3F00)
+        if((VRAMAdress.value & 0x3FFF) >= 0x3F00)
             result = readData;
         else
             result = internalBuffer;
@@ -543,11 +543,11 @@ Byte PPU::cpuRead(Address address)
         //The internal buffer is always updated with the read data
         internalBuffer = readData;
 
-        //The address stored in PPUADDR (VRAM address) is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
-        if(PPUCTRL_VRAM_increment())
-            PPUADDR.address += 32;
+        //The current VRAM address is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
+        if(PPUCTRL.VRAMincrement)
+            VRAMAdress.value += 32;
         else
-            PPUADDR.address++;
+            VRAMAdress.value++;
 
         return result;
     }
