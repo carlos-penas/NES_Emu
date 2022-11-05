@@ -40,7 +40,7 @@ void CPU::run()
 void CPU::executeCycle()
 {
     //If we are in the middle of the execution of an instruction, we keep executing it
-    if(!currentInstruction.IsExecuted)
+    if(currentInstruction.isExecuting)
     {
         InstructionCycle();
     }
@@ -3223,10 +3223,9 @@ Byte CPU::memoryRead(Address address)
 void CPU::InstructionCycle()
 {
     //The instruction is decoded only on its first cycle
-    if(currentInstruction.IsExecuted)
+    if(!currentInstruction.isExecuting)
     {
-        currentInstruction = decodeInstruction();
-        readyToPrint = true;
+        currentInstruction.isExecuting = true;
     }
 
     //We simulate one cycle
@@ -3237,12 +3236,18 @@ void CPU::InstructionCycle()
     {
         //usleep(800000);
         executeInstruction();
-        currentInstruction.IsExecuted = true;
 
         //The pc is only updated if the instruction is not a branch instruction
         if(!currentInstruction.jumpInstruction)
         {
             pc+=currentInstruction.Bytes;
+        }
+
+        //We decode the next instruction
+        currentInstruction = decodeInstruction();
+        if(!NMI.isPending && !IRQ.isPending && !reset.isPending)    // && !DMA Transfer is pending??
+        {
+            readyToPrint = true;
         }
     }
 }
@@ -3258,6 +3263,9 @@ void CPU::NMICycle()
         NMI.isPending = false;
         printf("EJECUTO NMI\n");
         executeNMI();
+
+        currentInstruction = decodeInstruction();
+        readyToPrint = true;
     }
 }
 
@@ -3278,6 +3286,9 @@ void CPU::resetCycle()
         reset.isPending = false;
         printf("EJECUTO RESET\n");
         executeReset();
+
+        currentInstruction = decodeInstruction();
+        readyToPrint = true;
     }
 }
 
@@ -3292,6 +3303,9 @@ void CPU::IRQCycle()
         IRQ.isPending = false;
         printf("EJECUTO IRQ\n");
         executeIRQ();
+
+        currentInstruction = decodeInstruction();
+        readyToPrint = true;
     }
 }
 
@@ -3325,8 +3339,6 @@ void CPU::executeReset()
     //pc = 0xC000;    //Para nestest empieza aquí.
     sp = 0xFD;      //Empieza en FD, habrá que leerse la docu.
     P = 0x24;       //EL bit que sobra a 1 y el Bit interrupciones disabled a 1. //En teoría es 0x34, pero el emulador de prueba lo inicializa así y de este modo me cuadra el log.
-
-    currentInstruction = CPUInstruction();
 }
 
 void CPU::executeIRQ()

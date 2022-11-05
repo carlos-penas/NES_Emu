@@ -17,7 +17,7 @@ PPU::PPU()
     window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
 #endif
 
-
+    PPUSTATUS.VBlank = 0;
     //PPUSTATUS =0xA0;
     PPUSTATUS.value =0x00;
     PPUCTRL.value = 0;
@@ -43,9 +43,14 @@ void PPU::disconnectCartridge()
 
 void PPU::executeCycle()
 {
-    //At the start of the frame, the Vertical Blank flag is reset
-    if(scanline == 1 && cycle == 1)
+    //At the start of the frame, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
+    if(scanline == 261 && cycle == 1)
+    {
         PPUSTATUS.VBlank = 0;
+        PPUSTATUS.spriteZeroHit = 0;
+        PPUSTATUS.spriteOverflow = 0;
+    }
+
 
 
     //From scanline 241 onwards, the Vertical Blank flag is set
@@ -59,9 +64,9 @@ void PPU::executeCycle()
     }
 
     cycle++;
-    if(cycle == 342)
+    if(cycle == 341)
     {
-        cycle = 1;
+        cycle = 0;
         scanline++;
     }
 
@@ -431,7 +436,7 @@ void PPU::cpuWrite(Byte value, Address address)
     }
     case RegAddress::PPUMASK:
     {
-        PPUMASK = value;
+        PPUMASK.value = value;
         break;
     }
     case RegAddress::PPUSTATUS:

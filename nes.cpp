@@ -1,5 +1,4 @@
 #include "nes.h"
-
 //#define PRINTCPU
 
 NES::NES()
@@ -50,24 +49,23 @@ void NES::run()
     while(!cpu->HLT && systemCycles < 1611539 * 3)        //Para Super mario cargado el menu
     //while(!cpu->HLT && systemCycles < 10529989 * 3)         //Para Donkey Kong cargado el nivel
     {
-        if(!(systemCycles % 3))
+        if(systemCycles >= 21)
+        {
+            ppu->executeCycle();
+        }
+
+        if(!((systemCycles+1) % 3))
         {
             cpu->executeCycle();
             if(cpu->readyToPrint)
             {
                 cpu->readyToPrint = false;
                 #ifdef PRINTCPU
-                QString state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: " + QString::number(cpu->getCycles()-1);
+                QString state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: " + QString::number(cpu->getCycles());
                 printf("%s\n",state.toUtf8().data());
                 #endif
             }
         }
-
-        if(systemCycles >= 21)
-        {
-            ppu->executeCycle();
-        }
-
 
         if(ppu->NMI)
         {

@@ -20,7 +20,7 @@ public:
 
     QString Name;
 
-    bool IsExecuted;
+    bool isExecuting;
     bool jumpInstruction;
 
 

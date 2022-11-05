@@ -3,7 +3,7 @@
 #include "types.h"
 #include "cartridge.h"
 #include "utils.h"
-//#define SHOWGRAPHICS
+#define SHOWGRAPHICS
 
 //SFML
 #ifdef SHOWGRAPHICS
@@ -40,8 +40,8 @@ union AddressRegister{
 
 union ControlRegister{
     struct{
-        Register16 nametableX : 1;
-        Register16 nametableY : 1;
+        Register8 nametableX : 1;
+        Register8 nametableY : 1;
         Register8 VRAMincrement : 1;
         Register8 spriteAdress : 1;
         Register8 backgroundAddress : 1;
@@ -62,6 +62,20 @@ union StatusRegister{
     Register8 value;
 };
 
+union MaskRegister{
+    struct{
+        Register8 greyScale : 1;
+        Register8 showLeftBackground : 1;
+        Register8 showLeftSprites : 1;
+        Register8 renderBackground : 1;
+        Register8 renderSprites : 1;
+        Register8 emphasizeRed : 1;
+        Register8 emphasizeGreen : 1;
+        Register8 emphasizeBlue : 1;
+    };
+    Register8 value;
+};
+
 class PPU
 {
 public:
@@ -78,7 +92,7 @@ public:
 
     void drawNameTable();
 
-    //When cpu tries to read from PPU registers
+    //When cpu tries to access from PPU registers
     void cpuWrite(Byte value, Address address);
     Byte cpuRead(Address address);
 
@@ -91,7 +105,7 @@ public:
 private:
     //Memory map (16KB)
     Cartridge * cartridge;                  //   8 KB
-    Register8 NameTables[2][0x400];         //   4 NameTables of 1KB each
+    Register8 NameTables[2][0x400];         //   2 NameTables of 1KB each
     Register8 PaletteRAMIndexes[0x20];      //  32 Bytes
     Register8 OAM[0x100];                   // 256 Bytes
 
@@ -130,12 +144,12 @@ private:
 
     //Registers
     ControlRegister PPUCTRL;
-    Register8 PPUMASK;
+    MaskRegister PPUMASK;
     StatusRegister PPUSTATUS;
     Register8 OAMADDR;
     Register8 OAMDATA;
 
-    //Internal registers operated by PPUADDR and PPUSCroll
+    //Internal registers operated by PPUADDR and PPUSCROLL
     AddressRegister VRAMAdress;     //(15 bits) --> [v]: Current VRAM address
     AddressRegister tempVRAMAdress; //(15 bits) --> [t]: Temporary VRAM address. Address of the first tile (top left) that appears on the screen
     Register8 pixelOffsetX;         //(3 bits)  --> [x]: Fine X scroll
