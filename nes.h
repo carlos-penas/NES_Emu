@@ -3,7 +3,12 @@
 #include "cartridge.h"
 #include "cpu.h"
 #include "ppu.h"
+#include "compilationSettings.h"
+#include <QElapsedTimer>
 
+#ifdef RENDERSCREEN
+#include "Graphics.hpp"
+#endif
 
 class NES
 {
@@ -17,6 +22,17 @@ public:
 private:
     uint64_t systemCycles;
 
+    //Screen rendering
+#ifdef RENDERSCREEN
+    sf::RenderWindow window;
+    sf::Texture pixels_texture;
+    sf::Sprite pixels_sprite;
+    sf::Event event;
+    QElapsedTimer timer;
+#endif
+    Byte *pixels;
+
+    //NES modules
     Bus *bus;
     Cartridge *cartridge;
     CPU *cpu;

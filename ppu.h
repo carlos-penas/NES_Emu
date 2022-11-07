@@ -3,12 +3,6 @@
 #include "types.h"
 #include "cartridge.h"
 #include "utils.h"
-#define SHOWGRAPHICS
-
-//SFML
-#ifdef SHOWGRAPHICS
-#include "Graphics.hpp"
-#endif
 
 enum RegAddress{
     PPUCTRL   = 0x2000,
@@ -84,6 +78,9 @@ public:
     void connectCartridge(Cartridge *cartridge);
     void disconnectCartridge();
 
+    void loadPixelBuffer(Byte * pixels);
+    void unloadPixelBuffer();
+
     void executeCycle();
 
     void drawFrame();
@@ -113,10 +110,9 @@ private:
     uint16_t cycle;
     uint16_t scanline;
 
-    //SFML
-#ifdef SHOWGRAPHICS
-    sf::RenderWindow window;
-#endif
+    //Buffer to render the pixels
+    Byte *pixels;
+
     Byte color1 [4] = {0,0,0,0};
     Byte color2 [4] = {247, 2, 149,255};
     Byte color4 [4] = {65, 242, 216,255};

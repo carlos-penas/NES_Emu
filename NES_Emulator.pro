@@ -41,6 +41,7 @@ HEADERS += \
     Mappers/mapper2.h \
     bus.h \
     cartridge.h \
+    compilationSettings.h \
     constants.h \
     cpu.h \
     cpuOpCodes.h \

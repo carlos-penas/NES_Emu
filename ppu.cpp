@@ -2,21 +2,9 @@
 #include "constants.h"
 #include <cstring>
 #include <unistd.h>
-//#define PRINTPPU
-
 
 PPU::PPU()
 {
-#ifdef SHOWGRAPHICS
-    //Set window actual resolution
-    //window.create(sf::VideoMode(PT_TABLE_WIDTH,PT_TABLE_HEIGHT),"Pattern Table");      //Pattern Table
-    window.create(sf::VideoMode(PICTURE_WIDTH,PICTURE_HEIGHT),"Nintendo Entertainment System");      //NES screen
-
-    //Increase window size if needed
-    //window.setSize(sf::Vector2u(PT_TABLE_WIDTH*RES_MULTIPLYER,PT_TABLE_HEIGHT*RES_MULTIPLYER));
-    window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
-#endif
-
     PPUSTATUS.VBlank = 0;
     //PPUSTATUS =0xA0;
     PPUSTATUS.value =0x00;
@@ -39,6 +27,16 @@ void PPU::connectCartridge(Cartridge *cartridge)
 void PPU::disconnectCartridge()
 {
     this->cartridge = NULL;
+}
+
+void PPU::loadPixelBuffer(Byte *pixels)
+{
+    this->pixels = pixels;
+}
+
+void PPU::unloadPixelBuffer()
+{
+    this->pixels = NULL;
 }
 
 void PPU::executeCycle()
@@ -99,164 +97,116 @@ void PPU::drawFrame()
 
 void PPU::drawPatternTable()
 {
-#ifdef SHOWGRAPHICS
     //Create pixel buffer with the appropriate size
-    Byte *pixels = new Byte[PT_TABLE_WIDTH * PT_TABLE_HEIGHT * PIXEL_SIZE];
+//    Byte *pixels = new Byte[PT_TABLE_WIDTH * PT_TABLE_HEIGHT * PIXEL_SIZE];
 
-    //Create a texture with the same size as the window
-    sf::Texture pixels_texture;
-    pixels_texture.create(PT_TABLE_WIDTH, PT_TABLE_HEIGHT);
+//    //Create a texture with the same size as the window
+//    sf::Texture pixels_texture;
+//    pixels_texture.create(PT_TABLE_WIDTH, PT_TABLE_HEIGHT);
 
-    //Create a sf:Sprite to render the texture in the window
-    sf::Sprite pixels_sprite(pixels_texture);
-    bool ya = false;
+//    //Create a sf:Sprite to render the texture in the window
+//    sf::Sprite pixels_sprite(pixels_texture);
+//    bool ya = false;
 
-    while(window.isOpen())
-    {
-        usleep(16666);
-        sf::Event event;
-        while (window.pollEvent(event))
-        {
-            if(event.type == sf::Event::Closed)
-                window.close();
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-                window.close();
-            }
-        }
+//    while(window.isOpen())
+//    {
+//        usleep(16666);
+//        sf::Event event;
+//        while (window.pollEvent(event))
+//        {
+//            if(event.type == sf::Event::Closed)
+//                window.close();
+//            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
+//                window.close();
+//            }
+//        }
 
-        window.clear(sf::Color::Black);
+//        window.clear(sf::Color::Black);
 
-        uint64_t pixelToLoad = 0;
+//        uint64_t pixelToLoad = 0;
 
-        if(!ya)
-        {
-            for(int tableRow = 0; tableRow < PT_TABLE_ROWS; tableRow++)
-            {
-                for(int tableCol = 0; tableCol < PT_TABLE_COLS; tableCol ++)
-                {
-                    //Load each pattern from the Pattern table into the pixel buffer
-                    loadPattern(tableRow,tableCol,&pixels[pixelToLoad]);
+//        if(!ya)
+//        {
+//            for(int tableRow = 0; tableRow < PT_TABLE_ROWS; tableRow++)
+//            {
+//                for(int tableCol = 0; tableCol < PT_TABLE_COLS; tableCol ++)
+//                {
+//                    //Load each pattern from the Pattern table into the pixel buffer
+//                    loadPattern(tableRow,tableCol,&pixels[pixelToLoad]);
 
-                    //Update pixel pointer to the position of the next pattern
-                    pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
-                }
-                //Update pixel pointer to the position of the next pattern (on the next row)
-                pixelToLoad += PTRN_LNGHT * PT_TABLE_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
-            }
-            ya = true;
-        }
+//                    //Update pixel pointer to the position of the next pattern
+//                    pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
+//                }
+//                //Update pixel pointer to the position of the next pattern (on the next row)
+//                pixelToLoad += PTRN_LNGHT * PT_TABLE_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
+//            }
+//            ya = true;
+//        }
 
-        //Update the texture of the sf:Sprite with the pixel buffer
-        pixels_texture.update(pixels);
-        window.draw(pixels_sprite);
+//        //Update the texture of the sf:Sprite with the pixel buffer
+//        pixels_texture.update(pixels);
+//        window.draw(pixels_sprite);
 
 
-        window.display();
-        }
-#endif
+//        window.display();
+//        }
 }
 
-void PPU::drawNameTable() //Byte *pixels parametro.
+void PPU::drawNameTable()
 {
-#ifdef SHOWGRAPHICS
-    //Create pixel buffer with the appropriate size
-    Byte *pixels = new Byte[PICTURE_WIDTH * PICTURE_HEIGHT * PIXEL_SIZE];
+    int nametableIndex = 0x2000;
+    int attributeTableIndex = 0;
+    int blockIndex = 0;
+    uint64_t pixelToLoad = 0;
 
-    //Create a texture with the same size as the window
-    sf::Texture pixels_texture;
-    pixels_texture.create(PICTURE_WIDTH, PICTURE_HEIGHT);
-
-    //Create a sf:Sprite to render the texture in the window
-    sf::Sprite pixels_sprite(pixels_texture);
-    bool ya = false;
-
-    //initializePallette();
-
-    while(window.isOpen())
+    for(int gridRow = 0; gridRow < BACKGROUND_ROWS; gridRow++)
     {
-        usleep(16666);
-        sf::Event event;
-        while (window.pollEvent(event))
+        for(int gridCol = 0; gridCol < BACKGROUND_COLS; gridCol ++)
         {
-            if(event.type == sf::Event::Closed)
-                window.close();
-            if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter) {
-                window.close();
-            }
-        }
+            blockIndex = (gridRow & 0x2) | (gridCol & 0x2) >> 1;
 
-        window.clear(sf::Color::Black);
+            //Read entry from the Nametable
+            int patternIndex = memoryRead(nametableIndex) + 0x100;  //+100 porque son los del backround (estan en la segunda mitad de la tabla (Cada tabla son 0x100 tiles).
 
-        int nametableIndex = 0x2000;
-        int attributeTableIndex = 0;
-        int blockIndex = 0;
-        uint64_t pixelToLoad = 0;
+            //Read entry from Attribute table
+            int blockAttribute = memoryRead(0x2000 + 0x3C0 + attributeTableIndex);
 
-        if(!ya)
-        {
-            for(int gridRow = 0; gridRow < BACKGROUND_ROWS; gridRow++)
+            int paletteIndex = getPaletteIndex(blockIndex,blockAttribute);
+
+            //Load each row of pixels of the pattern individually
+            for(int i = 0; i < PTRN_LNGHT; i++)
             {
-                for(int gridCol = 0; gridCol < BACKGROUND_COLS; gridCol ++)
-                {
-                    blockIndex = (gridRow & 0x2) | (gridCol & 0x2) >> 1;
-
-                    //Read entry from the Nametable
-                    int patternIndex = memoryRead(nametableIndex) + 0x100;  //+100 porque son los del backround (estan en la segunda mitad de la tabla (Cada tabla son 0x100 tiles).
-
-                    //Read entry from Attribute table
-                    int blockAttribute = memoryRead(0x2000 + 0x3C0 + attributeTableIndex);
-
-                    int paletteIndex = getPaletteIndex(blockIndex,blockAttribute);
-
-                    //Load each row of pixels of the pattern individually
-                    for(int i = 0; i < PTRN_LNGHT; i++)
-                    {
-                        loadPatternRow(&pixels[pixelToLoad],i,patternIndex,paletteIndex);
-                    }
-
-                    //Update pixel pointer to the position of the next pattern
-                    pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
-
-                    //Increment indexes if needed
-                    nametableIndex++;
-
-                    if(!((gridCol+1) % 4))
-                        attributeTableIndex++;
-
-
-                }
-                //Update pixel pointer to the position of the next pattern (on the next row)
-                pixelToLoad += PTRN_LNGHT * BACKGROUND_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
-
-                //Reset attribute table index if needed
-                if(((gridRow+1) % 4))
-                    attributeTableIndex = attributeTableIndex - 8;
-
+                loadPatternRow(&pixels[pixelToLoad],i,patternIndex,paletteIndex);
             }
 
-            ya = true;
+            //Update pixel pointer to the position of the next pattern
+            pixelToLoad += PTRN_LNGHT * PIXEL_SIZE;
+
+            //Increment indexes if needed
+            nametableIndex++;
+
+            if(!((gridCol+1) % 4))
+                attributeTableIndex++;
+
+
         }
+        //Update pixel pointer to the position of the next pattern (on the next row)
+        pixelToLoad += PTRN_LNGHT * BACKGROUND_COLS * (PTRN_LNGHT-1) * PIXEL_SIZE;
 
-        //Update the texture of the sf:Sprite with the pixel buffer
-        pixels_texture.update(pixels);
-        window.draw(pixels_sprite);
+        //Reset attribute table index if needed
+        if(((gridRow+1) % 4))
+            attributeTableIndex = attributeTableIndex - 8;
 
-
-        window.display();
     }
-
-    delete[] pixels;
-#endif
-
-//    printf("OAM:\n");
-//    for(int i = 0; i < 256; i++)
-//    {
-//        printf("OAM[%02X] = %02X\n",i,OAM[i]);
-//        if(!((i+1) % 4))
-//        {
-//            printf("\n");
-//        }
-//    }
+    //    printf("OAM:\n");
+    //    for(int i = 0; i < 256; i++)
+    //    {
+    //        printf("OAM[%02X] = %02X\n",i,OAM[i]);
+    //        if(!((i+1) % 4))
+    //        {
+    //            printf("\n");
+    //        }
+    //    }
 }
 void PPU::loadPattern(int tableRow, int tableCol, Byte *pixels)
 {
@@ -335,14 +285,14 @@ void PPU::memoryWrite(Byte value, Address address)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
             printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 11) & 1][address & 0x3FF] = value;
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
             printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 10) & 1][address & 0x3FF] = value;
@@ -352,7 +302,7 @@ void PPU::memoryWrite(Byte value, Address address)
     //Pallette Indexes and their mirrors
     if(address >= 0x3F00 && address <= 0x3FFF)
     {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
         printf("Escritura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;
@@ -387,14 +337,14 @@ Byte PPU::memoryRead(Address address)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
             printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 11) & 1][address & 0x3FF];
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
             printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 10) & 1][address & 0x3FF];
@@ -404,7 +354,7 @@ Byte PPU::memoryRead(Address address)
     //Pallette Indexes and their mirrors
     if(address >= 0x3F00 && address <= 0x3FFF)
     {
-#ifdef PRINTPPU
+#ifdef PRINTLOG
         printf("Lectura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;

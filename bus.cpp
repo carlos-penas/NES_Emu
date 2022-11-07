@@ -1,7 +1,6 @@
 #include "bus.h"
 #include "stdio.h"
 #include <cstring>
-//#define PRINTMEMORY
 
 Bus::Bus()
 {
@@ -42,7 +41,7 @@ void Bus::Write(Byte value, Address address)
     //PPU Registers
     else if (address >= 0x2000 && address <= 0x3FFF)
     {
-#ifdef PRINTMEMORY
+#ifdef PRINTLOG
         printf("Escritura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
 #endif
         ppu->cpuWrite(value, address & 0x2007);
@@ -51,7 +50,7 @@ void Bus::Write(Byte value, Address address)
     //APU I/O
     else if(address >= 0x4000 && address <= 0x4017)
     {
-#ifdef PRINTMEMORY
+#ifdef PRINTLOG
         printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         APU_IO[address & 0x001F] = value;
@@ -86,7 +85,7 @@ Byte Bus::Read(Address address)
     //PPU Registers
     if (address >= 0x2000 && address <= 0x3FFF)
     {
-#ifdef PRINTMEMORY
+#ifdef PRINTLOG
         printf("Lectura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
 #endif
         return ppu->cpuRead(address & 0x2007);
@@ -95,7 +94,7 @@ Byte Bus::Read(Address address)
     //APU I/O
     if(address >= 0x4000 && address <= 0x4017)
     {
-#ifdef PRINTMEMORY
+#ifdef PRINTLOG
         printf("Lectura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         return APU_IO[address & 0x001F];
@@ -104,7 +103,7 @@ Byte Bus::Read(Address address)
     //APU Test
     if(address >= 0x4018 && address <= 0x401F)
     {
-#ifdef PRINTMEMORY
+#ifdef PRINTLOG
         printf("Lectura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
 #endif
         return APU_Test[address  & 0x0007];
