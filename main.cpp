@@ -25,7 +25,5 @@ int main(int argc,char* argv[])
         printf("Error al cargar la ROM\n");
     }
 
-
-
     return 0;
 }

@@ -16,6 +16,10 @@ NES::NES()
     //Increase window size if needed
     window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
 
+    //Center Screen
+    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+    window.setPosition(sf::Vector2i(desktop.width/2 - window.getSize().x/2,desktop.height/2 - window.getSize().y/2));
+
     //Create pixel buffer with the appropriate size
     pixels = new Byte[PICTURE_WIDTH * PICTURE_HEIGHT * PIXEL_SIZE];
 
@@ -24,6 +28,10 @@ NES::NES()
 
     //Create a sf:Sprite to render the texture in the window
     pixels_sprite.setTexture(pixels_texture);
+
+    //Start with a black screen
+    window.clear(sf::Color::Black);
+    window.display();
 
     //Load pixel buffer into ppu
     ppu->loadPixelBuffer(pixels);
@@ -53,8 +61,6 @@ bool NES::loadGame(string path)
     if(cartridge->loadROM(path))
     {
         bus->connectCartridge(cartridge);
-
-
         ppu->connectCartridge(cartridge);
         bus->connectPPU(ppu);
         return true;
@@ -118,16 +124,24 @@ void NES::run()
         systemCycles++;
 
 #ifdef RENDERSCREEN
-        //Render screen every ~16666666 ns (60 fps)
-        if(timer.nsecsElapsed() >= 116666666)
+        //At the beggining of scanline 240 the frame is complete
+        if(ppu->getCurrentScanline() == 240 && ppu->getCurrentCycle() == 0)
         {
+            ppu->drawNameTable();
+
             //Prepare window for rendering
             pixels_texture.update(pixels);
             window.draw(pixels_sprite);
 
+            //Render screen every ~16666666 ns (for 60 fps)
+            while(timer.nsecsElapsed() < 16666666)
+            {
+                continue;
+            }
+
             window.display();
             timer.restart();
-            //window.clear(sf::Color::Black);
+            window.clear(sf::Color::Black);
 
             //Manage keyboard inputs
             while (window.pollEvent(event))
@@ -141,14 +155,9 @@ void NES::run()
             }
         }
 #endif
-
-        //QUITAR CUANDO SE IMPLEMENTE EL RENDERIZADO POR CICLO EN LA PPU
-        if(systemCycles == 4834617)
-        //if(systemCycles == 31589967)
-        {
-            ppu->drawNameTable();
-        }
     }
+
+    printf("Executed for %ld cycles\n",systemCycles);
 }
 
 void NES::prueba()

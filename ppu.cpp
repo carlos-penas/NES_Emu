@@ -2,6 +2,7 @@
 #include "constants.h"
 #include <cstring>
 #include <unistd.h>
+#include "compilationSettings.h"
 
 PPU::PPU()
 {
@@ -41,14 +42,55 @@ void PPU::unloadPixelBuffer()
 
 void PPU::executeCycle()
 {
-    //At the start of the frame, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
-    if(scanline == 261 && cycle == 1)
+    //Visible frame render (scanlines 0-239 and pre-render scanline: 261)
+    if(scanline == 261 || scanline <= 239)
     {
-        PPUSTATUS.VBlank = 0;
-        PPUSTATUS.spriteZeroHit = 0;
-        PPUSTATUS.spriteOverflow = 0;
+        //At the start of the pre-render scanline, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
+        if(scanline == 261 && cycle == 1)
+        {
+            PPUSTATUS.VBlank = 0;
+            PPUSTATUS.spriteZeroHit = 0;
+            PPUSTATUS.spriteOverflow = 0;
+        }
+
+        //During cycles 280-304 of the pre-render scanline, the X component of the VRAM address is repeatedly updated with the contents of the temporal VRAM address
+        if(scanline == 261 && (cycle >= 280 && cycle <= 304))
+        {
+            if(PPUMASK.renderBackground || PPUMASK.renderSprites)
+            {
+                //updateCurrentY();
+            }
+        }
+
     }
 
+
+
+
+    //During cycles 328 to 256 (of the next scanline), every 8 cycles, the X component of the current VRAM address is incremented
+    if(cycle >= 328 || cycle <= 256)
+    {
+        if(PPUMASK.renderBackground || PPUMASK.renderSprites)
+        {
+            if(!(cycle % 8))
+            {
+                //incrementCurrentX();
+            }
+        }
+    }
+
+
+    //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
+    if(cycle == 256 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+    {
+        //incrementCurrentY();
+    }
+
+    //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
+    if(cycle == 257 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+    {
+        //updateCurrentX();
+    }
 
 
     //From scanline 241 onwards, the Vertical Blank flag is set
@@ -281,7 +323,7 @@ void PPU::memoryWrite(Byte value, Address address)
     }
 
     //Nametables and their mirrors
-    if(address >= 0x2000 && address <= 0x3EFF)
+    else if(address >= 0x2000 && address <= 0x3EFF)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
@@ -300,7 +342,7 @@ void PPU::memoryWrite(Byte value, Address address)
     }
 
     //Pallette Indexes and their mirrors
-    if(address >= 0x3F00 && address <= 0x3FFF)
+    else if(address >= 0x3F00 && address <= 0x3FFF)
     {
 #ifdef PRINTLOG
         printf("Escritura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
@@ -333,7 +375,7 @@ Byte PPU::memoryRead(Address address)
     }
 
     //Nametables and their mirrors
-    if(address >= 0x2000 && address <= 0x3EFF)
+    else if(address >= 0x2000 && address <= 0x3EFF)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
@@ -352,7 +394,7 @@ Byte PPU::memoryRead(Address address)
     }
 
     //Pallette Indexes and their mirrors
-    if(address >= 0x3F00 && address <= 0x3FFF)
+    else if(address >= 0x3F00 && address <= 0x3FFF)
     {
 #ifdef PRINTLOG
         printf("Lectura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
@@ -371,6 +413,59 @@ Byte PPU::memoryRead(Address address)
     }
 
     return 0x00;
+}
+
+void PPU::incrementCurrentY()
+{
+    if(VRAMAdress.pixelOffsetY < 7)
+    {
+        VRAMAdress.pixelOffsetY++;
+    }
+    else
+    {
+        VRAMAdress.pixelOffsetY = 0;
+        if(VRAMAdress.tileOffsetY == 29)
+        {
+            VRAMAdress.tileOffsetY = 0;
+            VRAMAdress.nametableY = ~VRAMAdress.nametableY;
+        }
+        else if(VRAMAdress.tileOffsetY == 31)
+        {
+            VRAMAdress.tileOffsetY = 0;
+            //No nametable switch
+        }
+        else
+        {
+            VRAMAdress.tileOffsetY++;
+        }
+
+    }
+}
+
+void PPU::incrementCurrentX()
+{
+    if(VRAMAdress.tileOffsetX == 31)
+    {
+        VRAMAdress.tileOffsetX = 0;
+        VRAMAdress.nametableX = ~VRAMAdress.nametableX;
+    }
+    else
+    {
+        VRAMAdress.tileOffsetX++;
+    }
+}
+
+void PPU::updateCurrentY()
+{
+    VRAMAdress.tileOffsetY = tempVRAMAdress.tileOffsetY;
+    VRAMAdress.nametableY = tempVRAMAdress.nametableY;
+    VRAMAdress.pixelOffsetY = tempVRAMAdress.pixelOffsetY;
+}
+
+void PPU::updateCurrentX()
+{
+    VRAMAdress.tileOffsetX = tempVRAMAdress.tileOffsetX;
+    VRAMAdress.nametableX = tempVRAMAdress.nametableX;
 }
 
 

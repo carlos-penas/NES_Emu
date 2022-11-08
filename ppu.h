@@ -81,6 +81,9 @@ public:
     void loadPixelBuffer(Byte * pixels);
     void unloadPixelBuffer();
 
+    uint16_t getCurrentScanline() {return scanline;};
+    uint16_t getCurrentCycle(){return cycle;};
+
     void executeCycle();
 
     void drawFrame();
@@ -137,6 +140,12 @@ private:
     //Memory
     void memoryWrite(Byte value, Address address);
     Byte memoryRead(Address address);
+
+    //Scrolling
+    void incrementCurrentY();
+    void incrementCurrentX();
+    void updateCurrentY();
+    void updateCurrentX();
 
     //Registers
     ControlRegister PPUCTRL;

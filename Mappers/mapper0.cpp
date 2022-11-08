@@ -86,12 +86,12 @@ Byte Mapper0::CPU_Read(Address address)
         }
         else
         {
-            throw NotMappedAddressException(address,WriteAttempt);
+            throw NotMappedAddressException(address,ReadAttempt);
         }
     }
     else
     {
-        throw NotMappedAddressException(address,WriteAttempt);
+        throw NotMappedAddressException(address,ReadAttempt);
     }
 }
 

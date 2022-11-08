@@ -1,6 +1,7 @@
 #include "bus.h"
 #include "stdio.h"
 #include <cstring>
+#include "compilationSettings.h"
 
 Bus::Bus()
 {
@@ -83,7 +84,7 @@ Byte Bus::Read(Address address)
     }
 
     //PPU Registers
-    if (address >= 0x2000 && address <= 0x3FFF)
+    else if (address >= 0x2000 && address <= 0x3FFF)
     {
 #ifdef PRINTLOG
         printf("Lectura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
@@ -92,7 +93,7 @@ Byte Bus::Read(Address address)
     }
 
     //APU I/O
-    if(address >= 0x4000 && address <= 0x4017)
+    else if(address >= 0x4000 && address <= 0x4017)
     {
 #ifdef PRINTLOG
         printf("Lectura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
@@ -101,7 +102,7 @@ Byte Bus::Read(Address address)
     }
 
     //APU Test
-    if(address >= 0x4018 && address <= 0x401F)
+    else if(address >= 0x4018 && address <= 0x401F)
     {
 #ifdef PRINTLOG
         printf("Lectura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
@@ -110,7 +111,7 @@ Byte Bus::Read(Address address)
     }
 
     //Cartridge
-    if(address >= 0x4020)
+    else if(address >= 0x4020)
     {
         return cartridge->CPU_Read(address);
     }
