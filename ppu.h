@@ -113,6 +113,23 @@ private:
     uint16_t cycle;
     uint16_t scanline;
 
+    //Rendering
+    bool oddFrame;
+    Byte patternIndex;
+    Byte tileAttribute;
+    Byte patternLSB;
+    Byte patternMSB;
+
+    Register16 shft_PatternLSB;
+    Register16 shft_PatternMSB;
+    Register16 shft_PaletteLow;
+    Register16 shft_PaletteHigh;
+
+    Byte colorOffset;
+    Byte paletteRAMIndex;
+
+    uint64_t currentPixel;
+
     //Buffer to render the pixels
     Byte *pixels;
 
@@ -146,6 +163,10 @@ private:
     void incrementCurrentX();
     void updateCurrentY();
     void updateCurrentX();
+
+    //Render
+    void shiftRegisters();
+    void loadShiftRegisters();
 
     //Registers
     ControlRegister PPUCTRL;

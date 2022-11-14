@@ -19,10 +19,11 @@ NES::NES()
     //Center Screen
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
     window.setPosition(sf::Vector2i(desktop.width/2 - window.getSize().x/2,desktop.height/2 - window.getSize().y/2));
-
+#endif
     //Create pixel buffer with the appropriate size
     pixels = new Byte[PICTURE_WIDTH * PICTURE_HEIGHT * PIXEL_SIZE];
 
+#ifdef RENDERSCREEN
     //Create a texture with the same size as the window
     pixels_texture.create(PICTURE_WIDTH, PICTURE_HEIGHT);
 
@@ -33,9 +34,9 @@ NES::NES()
     window.clear(sf::Color::Black);
     window.display();
 
+#endif
     //Load pixel buffer into ppu
     ppu->loadPixelBuffer(pixels);
-#endif
 }
 
 NES::~NES()
@@ -92,7 +93,8 @@ void NES::run()
     while(!cpu->HLT && window.isOpen())
 #endif
 #ifndef RENDERSCREEN
-    while(!cpu->HLT && systemCycles < 1611539 * 3)
+    //while(!cpu->HLT && systemCycles < 1611539 * 3)
+        while(!cpu->HLT && systemCycles < 3968225)
     //while(!cpu->HLT && systemCycles < 10529989 * 3)
 #endif
     {
@@ -127,11 +129,16 @@ void NES::run()
         //At the beggining of scanline 240 the frame is complete
         if(ppu->getCurrentScanline() == 240 && ppu->getCurrentCycle() == 0)
         {
-            ppu->drawNameTable();
+            //ppu->drawNameTable(); //Forma "cutrilla"
 
             //Prepare window for rendering
             pixels_texture.update(pixels);
             window.draw(pixels_sprite);
+
+            if(timer.nsecsElapsed() > 16666666)
+            {
+                printf("ATENCION, SE ESTÁ RALENTIZANDO EL JUEGO\n");
+            }
 
             //Render screen every ~16666666 ns (for 60 fps)
             while(timer.nsecsElapsed() < 16666666)
@@ -169,7 +176,7 @@ void NES::prueba()
     {
         if(systemCycles >= 21)
         {
-            ppu->executeCycle();
+            //ppu->executeCycle();
         }
 
         if(!((systemCycles+1) % 3))

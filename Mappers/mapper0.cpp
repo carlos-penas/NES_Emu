@@ -26,7 +26,7 @@ void Mapper0::CPU_Write(Byte value, Address address)
         else
         {
             //PRG RAM not defined
-            throw NotMappedAddressException(address,WriteAttempt);
+            //throw NotMappedAddressException(address,WriteAttempt);
         }
     }
     else if(address >= 0x8000)
@@ -43,12 +43,12 @@ void Mapper0::CPU_Write(Byte value, Address address)
         }
         else
         {
-            throw NotMappedAddressException(address,WriteAttempt);
+            //throw NotMappedAddressException(address,WriteAttempt);
         }
     }
     else
     {
-        throw NotMappedAddressException(address,WriteAttempt);
+        //throw NotMappedAddressException(address,WriteAttempt);
     }
 }
 
@@ -69,7 +69,7 @@ Byte Mapper0::CPU_Read(Address address)
         else
         {
             //PRG RAM not defined
-            throw NotMappedAddressException(address,ReadAttempt);
+            //throw NotMappedAddressException(address,ReadAttempt);
         }
     }
     else if(address >= 0x8000)
@@ -86,12 +86,14 @@ Byte Mapper0::CPU_Read(Address address)
         }
         else
         {
-            throw NotMappedAddressException(address,ReadAttempt);
+            //throw NotMappedAddressException(address,ReadAttempt);
+            return 0x00;
         }
     }
     else
     {
-        throw NotMappedAddressException(address,ReadAttempt);
+        //throw NotMappedAddressException(address,ReadAttempt);
+        return 0x00;
     }
 }
 

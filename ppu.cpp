@@ -17,7 +17,15 @@ PPU::PPU()
     cycle = 0;
     scanline = 0;
 
+    patternIndex = 0;
+    currentPixel = 0;
+
+    pixelOffsetX = 0;
+
+    patternLSB = 0;
+
     NMI = false;
+    oddFrame = false;
 }
 
 void PPU::connectCartridge(Cartridge *cartridge)
@@ -53,45 +61,98 @@ void PPU::executeCycle()
             PPUSTATUS.spriteOverflow = 0;
         }
 
+
+        //If we are on a part of the screen that is not blank, we render the pixel
+        if(cycle >=1 && cycle <= 257 && (PPUMASK.renderSprites || PPUMASK.renderBackground) && scanline != 261)
+        {
+            Byte offset = 15 - pixelOffsetX;
+
+            Byte plane0 = (shft_PaletteLow >> offset) & 0x1;
+            Byte plane1 = (shft_PaletteHigh >> offset) & 0x1;
+
+            paletteRAMIndex = (plane1 << 1) | plane0;
+
+            plane0 = (shft_PatternLSB >> offset) & 0x1;
+            plane1 = (shft_PatternMSB >> offset) & 0x1;
+
+            colorOffset = (plane1 << 1) | plane0;
+
+            Byte colorIndex = getColor(paletteRAMIndex,colorOffset);
+
+            memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+        }
+
+        if((cycle >= 1 && cycle <= 256) || (cycle >= 328 && cycle <=336))
+        {
+            //Each cycle, the shift registers are shifted
+            shiftRegisters();
+        }
+
+        if((cycle >= 2 && cycle <= 256) || (cycle >= 322 && cycle <=336))
+        {
+            //This sequence is repeated every 8 cycles to load all the data for the current tile
+            switch ((cycle-1)%8)
+            {
+            case 1:
+                //Load pattern index from Nametable
+                patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
+                break;
+
+            case 3:
+                //Load byte from Attribute table
+                tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
+
+                //Only keep the information for the quadrant that the current pixel belongs to
+                if(VRAMAdress.tileOffsetY & 0x02)
+                    tileAttribute >>= 4;
+                if(VRAMAdress.tileOffsetX & 0x02)
+                    tileAttribute >>= 2;
+                tileAttribute &= 0x03;
+                break;
+
+            case 5:
+                //Load pattern low byte from Pattern Table
+                patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
+                break;
+
+            case 7:
+                //Load pattern high byte from Pattern Table
+                patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
+
+                //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
+                loadShiftRegisters();
+
+                if(PPUMASK.renderBackground || PPUMASK.renderSprites)
+                {
+                    //Increment x component of VRAM
+                    incrementCurrentX();
+                }
+                break;
+            }
+        }
+
+        //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
+        if(cycle == 256 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+        {
+            incrementCurrentY();
+        }
+
+        //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
+        if(cycle == 257 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+        {
+            updateCurrentX();
+        }
+
         //During cycles 280-304 of the pre-render scanline, the X component of the VRAM address is repeatedly updated with the contents of the temporal VRAM address
         if(scanline == 261 && (cycle >= 280 && cycle <= 304))
         {
             if(PPUMASK.renderBackground || PPUMASK.renderSprites)
             {
-                //updateCurrentY();
+                updateCurrentY();
             }
         }
 
     }
-
-
-
-
-    //During cycles 328 to 256 (of the next scanline), every 8 cycles, the X component of the current VRAM address is incremented
-    if(cycle >= 328 || cycle <= 256)
-    {
-        if(PPUMASK.renderBackground || PPUMASK.renderSprites)
-        {
-            if(!(cycle % 8))
-            {
-                //incrementCurrentX();
-            }
-        }
-    }
-
-
-    //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
-    if(cycle == 256 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
-    {
-        //incrementCurrentY();
-    }
-
-    //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
-    if(cycle == 257 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
-    {
-        //updateCurrentX();
-    }
-
 
     //From scanline 241 onwards, the Vertical Blank flag is set
     if(scanline == 241 && cycle == 1)
@@ -468,6 +529,36 @@ void PPU::updateCurrentX()
     VRAMAdress.nametableX = tempVRAMAdress.nametableX;
 }
 
+void PPU::shiftRegisters()
+{
+    shft_PatternLSB <<= 1;
+    shft_PatternMSB <<= 1;
+    shft_PaletteLow <<= 1;
+    shft_PaletteHigh <<= 1;
+}
+
+void PPU::loadShiftRegisters()
+{
+   if(PPUMASK.renderSprites || PPUMASK.renderBackground)
+   {
+       //Load data for the next pattern on the LSB of the shift registers
+       shft_PatternLSB &= 0xFF00;
+       shft_PatternMSB &= 0xFF00;
+       shft_PatternLSB |= patternLSB;
+       shft_PatternMSB |= patternMSB;
+
+       //Load the (same) palette index on the LSB of the shift registers
+       if(tileAttribute & 0b01)
+           shft_PaletteLow |= 0xFF;
+       else
+           shft_PaletteLow |= 0x00;
+
+       if(tileAttribute & 0b10)
+           shft_PaletteHigh |= 0xFF;
+       else
+           shft_PaletteHigh |= 0x00;
+   }
+}
 
 void PPU::cpuWrite(Byte value, Address address)
 {
