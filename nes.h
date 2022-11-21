@@ -21,6 +21,7 @@ public:
 
 private:
     uint64_t systemCycles;
+    Byte cycleCounter;
 
     //Screen rendering
 #ifdef RENDERSCREEN

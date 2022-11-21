@@ -25,6 +25,7 @@ PPU::PPU()
     patternLSB = 0;
 
     NMI = false;
+    frameComplete = false;
     oddFrame = false;
 }
 
@@ -50,45 +51,36 @@ void PPU::unloadPixelBuffer()
 
 void PPU::executeCycle()
 {
-    //Visible frame render (scanlines 0-239 and pre-render scanline: 261)
-    if(scanline == 261 || scanline <= 239)
+    //Visible frame render (scanlines 0-239)
+    if(scanline <= 239)
     {
-        //At the start of the pre-render scanline, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
-        if(scanline == 261 && cycle == 1)
-        {
-            PPUSTATUS.VBlank = 0;
-            PPUSTATUS.spriteZeroHit = 0;
-            PPUSTATUS.spriteOverflow = 0;
-        }
-
-
-        //If we are on a part of the screen that is not blank, we render the pixel
-        if(cycle >=1 && cycle <= 257 && (PPUMASK.renderSprites || PPUMASK.renderBackground) && scanline != 261)
+        //If we are on a part of the screen that is not blank (1-256), we render the pixel
+        if(cycle <= 256 && cycle >=1 && renderEnabled())
         {
             Byte offset = 15 - pixelOffsetX;
 
-            Byte plane0 = (shft_PaletteLow >> offset) & 0x1;
-            Byte plane1 = (shft_PaletteHigh >> offset) & 0x1;
+            Byte LSB = (shft_PaletteLow >> offset) & 0x1;
+            Byte MSB = (shft_PaletteHigh >> offset) & 0x1;
 
-            paletteRAMIndex = (plane1 << 1) | plane0;
+            paletteRAMIndex = (MSB << 1) | LSB;
 
-            plane0 = (shft_PatternLSB >> offset) & 0x1;
-            plane1 = (shft_PatternMSB >> offset) & 0x1;
+            LSB = (shft_PatternLSB >> offset) & 0x1;
+            MSB = (shft_PatternMSB >> offset) & 0x1;
 
-            colorOffset = (plane1 << 1) | plane0;
+            colorOffset = (MSB << 1) | LSB;
 
             Byte colorIndex = getColor(paletteRAMIndex,colorOffset);
 
             memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
         }
 
-        if((cycle >= 1 && cycle <= 256) || (cycle >= 328 && cycle <=336))
+        if((cycle <= 256 && cycle >= 1) || (cycle >= 328 && cycle <=336))
         {
             //Each cycle, the shift registers are shifted
             shiftRegisters();
         }
 
-        if((cycle >= 2 && cycle <= 256) || (cycle >= 322 && cycle <=336))
+        if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
         {
             //This sequence is repeated every 8 cycles to load all the data for the current tile
             switch ((cycle-1)%8)
@@ -119,11 +111,11 @@ void PPU::executeCycle()
                 //Load pattern high byte from Pattern Table
                 patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
 
-                //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
-                loadShiftRegisters();
-
-                if(PPUMASK.renderBackground || PPUMASK.renderSprites)
+                if(renderEnabled())
                 {
+                    //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
+                    loadShiftRegisters();
+
                     //Increment x component of VRAM
                     incrementCurrentX();
                 }
@@ -132,36 +124,112 @@ void PPU::executeCycle()
         }
 
         //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
-        if(cycle == 256 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+        if(cycle == 256 && renderEnabled())
         {
             incrementCurrentY();
         }
 
         //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
-        if(cycle == 257 && (PPUMASK.renderBackground || PPUMASK.renderSprites))
+        if(cycle == 257 && renderEnabled())
+        {
+            updateCurrentX();
+        }
+
+    }
+    //Pre-render scanline
+    else if(scanline == 261)
+    {
+        //At the start of the pre-render scanline, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
+        if(cycle == 1)
+        {
+            PPUSTATUS.VBlank = 0;
+            PPUSTATUS.spriteZeroHit = 0;
+            PPUSTATUS.spriteOverflow = 0;
+        }
+
+        //if((cycle >= 1 && cycle <= 256) || (cycle >= 328 && cycle <=336))
+        if((cycle >= 328 && cycle <=336))
+        {
+            //Each cycle, the shift registers are shifted
+            shiftRegisters();
+        }
+
+        if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
+        {
+            //This sequence is repeated every 8 cycles to load all the data for the current tile
+            switch ((cycle-1)%8)
+            {
+            case 1:
+                //Load pattern index from Nametable
+                patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
+                break;
+
+            case 3:
+                //Load byte from Attribute table
+                tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
+
+                //Only keep the information for the quadrant that the current pixel belongs to
+                if(VRAMAdress.tileOffsetY & 0x02)
+                    tileAttribute >>= 4;
+                if(VRAMAdress.tileOffsetX & 0x02)
+                    tileAttribute >>= 2;
+                tileAttribute &= 0x03;
+                break;
+
+            case 5:
+                //Load pattern low byte from Pattern Table
+                patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
+                break;
+
+            case 7:
+                //Load pattern high byte from Pattern Table
+                patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
+
+                if(renderEnabled())
+                {
+                    //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
+                    loadShiftRegisters();
+
+                    //Increment x component of VRAM
+                    incrementCurrentX();
+                }
+                break;
+            }
+        }
+
+        //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
+        if(cycle == 256 && renderEnabled())
+        {
+            incrementCurrentY();
+        }
+
+        //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
+        if(cycle == 257 && renderEnabled())
         {
             updateCurrentX();
         }
 
         //During cycles 280-304 of the pre-render scanline, the X component of the VRAM address is repeatedly updated with the contents of the temporal VRAM address
-        if(scanline == 261 && (cycle >= 280 && cycle <= 304))
+        if(cycle >= 280 && cycle <= 304 && renderEnabled())
         {
-            if(PPUMASK.renderBackground || PPUMASK.renderSprites)
-            {
-                updateCurrentY();
-            }
+            updateCurrentY();
         }
-
     }
 
     //From scanline 241 onwards, the Vertical Blank flag is set
-    if(scanline == 241 && cycle == 1)
+    if(cycle == 1 && scanline == 241)
     {
         PPUSTATUS.VBlank = 1;
         if(PPUCTRL.generateNMI)
         {
             NMI = true;
         }
+    }
+
+    //At the end of the visible part of scanline 239, the frame is complete
+    if(cycle == 257 && scanline == 239)
+    {
+        frameComplete = true;
     }
 
     cycle++;
@@ -175,6 +243,15 @@ void PPU::executeCycle()
     {
         scanline = 0;
     }
+
+    //The first cycle of the next frame is skipped if its an odd frame
+    oddFrame = !oddFrame;
+    if(oddFrame && cycle == 340 && scanline == 261 && renderEnabled())
+    {
+        cycle = 0;
+        scanline = 0;
+    }
+
 }
 
 void PPU::drawFrame()
@@ -389,14 +466,14 @@ void PPU::memoryWrite(Byte value, Address address)
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
 #ifdef PRINTLOG
-            printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
+            //printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 11) & 1][address & 0x3FF] = value;
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
 #ifdef PRINTLOG
-            printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
+            //printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 10) & 1][address & 0x3FF] = value;
         }
@@ -406,7 +483,7 @@ void PPU::memoryWrite(Byte value, Address address)
     else if(address >= 0x3F00 && address <= 0x3FFF)
     {
 #ifdef PRINTLOG
-        printf("Escritura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
+        //printf("Escritura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;
         if(address == 0x10)
@@ -441,14 +518,14 @@ Byte PPU::memoryRead(Address address)
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
 #ifdef PRINTLOG
-            printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
+            //printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 11) & 1][address & 0x3FF];
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
 #ifdef PRINTLOG
-            printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
+            //printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 10) & 1][address & 0x3FF];
         }
@@ -458,7 +535,7 @@ Byte PPU::memoryRead(Address address)
     else if(address >= 0x3F00 && address <= 0x3FFF)
     {
 #ifdef PRINTLOG
-        printf("Lectura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
+        //printf("Lectura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;
         if(address == 0x10)
@@ -539,25 +616,22 @@ void PPU::shiftRegisters()
 
 void PPU::loadShiftRegisters()
 {
-   if(PPUMASK.renderSprites || PPUMASK.renderBackground)
-   {
-       //Load data for the next pattern on the LSB of the shift registers
-       shft_PatternLSB &= 0xFF00;
-       shft_PatternMSB &= 0xFF00;
-       shft_PatternLSB |= patternLSB;
-       shft_PatternMSB |= patternMSB;
+    //Load data for the next pattern on the LSB of the shift registers
+    shft_PatternLSB &= 0xFF00;
+    shft_PatternMSB &= 0xFF00;
+    shft_PatternLSB |= patternLSB;
+    shft_PatternMSB |= patternMSB;
 
-       //Load the (same) palette index on the LSB of the shift registers
-       if(tileAttribute & 0b01)
-           shft_PaletteLow |= 0xFF;
-       else
-           shft_PaletteLow |= 0x00;
+    //Load the (same) palette index on the LSB of the shift registers
+    if(tileAttribute & 0b01)
+        shft_PaletteLow |= 0xFF;
+    else
+        shft_PaletteLow |= 0x00;
 
-       if(tileAttribute & 0b10)
-           shft_PaletteHigh |= 0xFF;
-       else
-           shft_PaletteHigh |= 0x00;
-   }
+    if(tileAttribute & 0b10)
+        shft_PaletteHigh |= 0xFF;
+    else
+        shft_PaletteHigh |= 0x00;
 }
 
 void PPU::cpuWrite(Byte value, Address address)

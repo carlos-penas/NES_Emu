@@ -101,6 +101,7 @@ public:
     QString stringPPUState();
 
     bool NMI;
+    bool frameComplete;
 
 private:
     //Memory map (16KB)
@@ -167,6 +168,7 @@ private:
     //Render
     void shiftRegisters();
     void loadShiftRegisters();
+    bool renderEnabled(){return PPUMASK.renderBackground || PPUMASK.renderSprites;};
 
     //Registers
     ControlRegister PPUCTRL;
