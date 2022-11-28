@@ -11,11 +11,18 @@ NES::NES()
     cpu = new CPU(bus);
 
 #ifdef RENDERSCREEN
+    //Load icon from png
+    sf::Image icon;
+    icon.loadFromFile("/home/carlos/programming/NES_Emulator/Documents/NES_Icon.png");
+
     //Set window actual resolution
     window.create(sf::VideoMode(PICTURE_WIDTH,PICTURE_HEIGHT),"Nintendo Entertainment System");
 
     //Increase window size if needed
     window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
+
+    //Set window icon
+    window.setIcon(icon.getSize().x,icon.getSize().y,icon.getPixelsPtr());
 
     //Center Screen
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
@@ -95,8 +102,8 @@ void NES::run()
 #endif
 #ifndef RENDERSCREEN
     //while(!cpu->HLT && systemCycles < 1611539 * 3)
-    while(!cpu->HLT && systemCycles < 3968225)
-    //while(!cpu->HLT && systemCycles < 10529989 * 3)
+    //while(!cpu->HLT && systemCycles < 3968225)
+    while(!cpu->HLT && systemCycles < 12260133 * 4)
 #endif
     {
         //Execute 1 ppu cycle every system cycle

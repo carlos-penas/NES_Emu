@@ -55,9 +55,6 @@ void Bus::Write(Byte value, Address address)
         printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         APU_IO[address & 0x001F] = value;
-
-        if(address == 0x4014)
-            OAM_DMA_Transfer(value);
     }
 
     //APU Test

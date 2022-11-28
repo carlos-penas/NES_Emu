@@ -108,14 +108,18 @@ private:
     Cartridge * cartridge;                  //   8 KB
     Register8 NameTables[2][0x400];         //   2 NameTables of 1KB each
     Register8 PaletteRAMIndexes[0x20];      //  32 Bytes
-    Register8 OAM[0x100];                   // 256 Bytes
+
+    //Internal memory
+    Register8 OAM[64][4];                   // 256 Bytes
+    Register8 Secondary_OAM[8][4];          //  32 Bytes
 
     //Cycles
     uint16_t cycle;
     uint16_t scanline;
 
-    //Rendering
     bool oddFrame;
+
+    //Background Rendering
     Byte patternIndex;
     Byte tileAttribute;
     Byte patternLSB;
@@ -128,6 +132,15 @@ private:
 
     Byte colorOffset;
     Byte paletteRAMIndex;
+
+    //Sprite Rendering
+    Register8 shft_SpritePatternLSB[8];
+    Register8 shft_SpritePatternMSB[8];
+
+    Byte currentSpriteNumber;
+    Byte nextScanlineSpriteNumber;
+    Byte spriteEvaluationIndex;
+    Byte spriteFetchingIndex;
 
     uint64_t currentPixel;
 
@@ -153,7 +166,7 @@ private:
     void loadPattern(int tableRow, int tableCol, Byte *pixels);
     void loadPatternRow(Byte *pixels, int ptrn_row, int patternIndex, int paletteIndex);
     int getPatternIndex(int tableRow, int tableCol);
-    Byte getColor(int paletteIndex, Byte colorOffset);
+    Byte getColor(int paletteIndex, Byte colorOffset, bool spritePalette);
 
     //Memory
     void memoryWrite(Byte value, Address address);
@@ -166,6 +179,10 @@ private:
     void updateCurrentX();
 
     //Render
+    void loadPixel();
+    void tileSequence();
+    void spriteFetchingSequence();
+    void spriteEvaluation();
     void shiftRegisters();
     void loadShiftRegisters();
     bool renderEnabled(){return PPUMASK.renderBackground || PPUMASK.renderSprites;};

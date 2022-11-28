@@ -70,7 +70,6 @@ void CPU::executeCycle()
         else if(OAM_DMA.isPending)
         {
             OAM_DMACycle();
-
             //We don't cancel the other interrupts in this case, just wait until the ~500 cycles of the DMA Transfer are finished.
         }
         else if(NMI.isPending)
@@ -3207,9 +3206,11 @@ void CPU::memoryWrite(Byte value, Address address, bool checkFlags)
     if(address == 0x4014)
     {
         if(totalCycles %2)
-            OAM_DMA.activate(514);      //Odd cycle
+            OAM_DMA.activate(514);      //Odd CPU cycle
         else
-            OAM_DMA.activate(513);      //Even cycle
+            OAM_DMA.activate(513);      //Even CPU cycle
+
+        OAM_tempAddress = Utils::joinBytes(value,0x00);
     }
 
     bus->Write(value,address);
@@ -3318,6 +3319,23 @@ void CPU::IRQCycle()
 
 void CPU::OAM_DMACycle()
 {
+    //The first 1-2 cycles are idle
+    if(OAM_DMA.cycles <= 512)
+    {
+        if(OAM_DMA.cycles & 0x01)
+        {
+            //Odd DMA cycle
+            //memoryWrite(OAM_tempData,RegAddress::OAMDATA,false);
+            bus->Write(OAM_tempData,RegAddress::OAMDATA);
+        }
+        else
+        {
+            //Even DMA cycle
+            OAM_tempData = memoryRead(OAM_tempAddress);
+            OAM_tempAddress++;
+        }
+    }
+
     OAM_DMA.cycles--;
 
     if(OAM_DMA.cycles == 0)

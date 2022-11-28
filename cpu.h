@@ -52,6 +52,8 @@ private:
     Interrupt IRQ;
 
     Interrupt OAM_DMA;
+    Address OAM_tempAddress;
+    Byte OAM_tempData;
 
     int totalCycles;
 

@@ -1,4 +1,5 @@
-#define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/nestest.nes"
+//#define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/nestest.nes"
+#define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/ROMs/Ice_Climber.nes"
 #include "nes.h"
 
 int main(int argc,char* argv[])

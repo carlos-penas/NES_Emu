@@ -12,6 +12,10 @@ PPU::PPU()
     PPUCTRL.value = 0;
     OAMADDR = 0;
 
+    currentSpriteNumber = 0;
+    spriteEvaluationIndex = 0;
+    spriteFetchingIndex = 0;
+
     internalBuffer = 0;
 
     cycle = 0;
@@ -54,24 +58,114 @@ void PPU::executeCycle()
     //Visible frame render (scanlines 0-239)
     if(scanline <= 239)
     {
-        //If we are on a part of the screen that is not blank (1-256), we render the pixel
-        if(cycle <= 256 && cycle >=1 && renderEnabled())
+        //if(scanline == OAM[0][0] && cycle == 29 && OAM[0][1] == 0xA2)
+        //if(scanline == (OAM[0][0] +15)  && cycle == 321 && OAM[0][1] == 0x04)
+//        if(scanline == OAM[0][0]  && cycle == 55 && OAM[0][1] == 0xA2)
+//        {
+//            int a = 1;
+//            int b = 2;
+//            printf("%d",a+b);
+//        }
+
+        //The sprite counter for the current scanline is updated, next scanline's counter and sprite evaluation index are restored to 0
+        if(cycle == 0)
         {
-            Byte offset = 15 - pixelOffsetX;
+            currentSpriteNumber = nextScanlineSpriteNumber;
+            nextScanlineSpriteNumber = 0;
+            spriteEvaluationIndex = 0;
+            spriteFetchingIndex = 0;
+        }
 
-            Byte LSB = (shft_PaletteLow >> offset) & 0x1;
-            Byte MSB = (shft_PaletteHigh >> offset) & 0x1;
 
-            paletteRAMIndex = (MSB << 1) | LSB;
+        //If we are on a part of the screen that is not blank (1-256), we load the pixel into the buffer
+        if(cycle <= 256 && cycle >=1 && PPUMASK.renderBackground)
+        {
+            if(currentSpriteNumber == 0 || scanline == 0 || !PPUMASK.renderSprites)
+            {
+                loadPixel();
+            }
+            else
+            {
+                Byte colorOffset = 0;
+                int spriteIndex = 0;
+                int i = 0;
 
-            LSB = (shft_PatternLSB >> offset) & 0x1;
-            MSB = (shft_PatternMSB >> offset) & 0x1;
+                do
+                {
+                    if(cycle > Secondary_OAM[i][3] && cycle <= (Secondary_OAM[i][3] + 8))
+                    {
+                        Byte spriteLSB;
+                        Byte spriteMSB;
+                        if(Secondary_OAM[i][2] & 0x40) //Sprite is flipped horizontally
+                        {
+                            spriteLSB = shft_SpritePatternLSB[i] & 0x01;
+                            spriteMSB = shft_SpritePatternMSB[i] & 0x01;
 
-            colorOffset = (MSB << 1) | LSB;
+                            //Shift sprite registers
+                            shft_SpritePatternLSB[i] >>= 1;
+                            shft_SpritePatternMSB[i] >>= 1;
+                        }
+                        else
+                        {
+                            spriteLSB = (shft_SpritePatternLSB[i] & 0x80) >> 7;
+                            spriteMSB = (shft_SpritePatternMSB[i] & 0x80) >> 7;
 
-            Byte colorIndex = getColor(paletteRAMIndex,colorOffset);
+                            //Shift sprite registers
+                            shft_SpritePatternLSB[i] <<= 1;
+                            shft_SpritePatternMSB[i] <<= 1;
+                        }
 
-            memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+                        if(colorOffset == 0)
+                        {
+                            colorOffset = (spriteMSB << 1) | spriteLSB;
+                            spriteIndex = i;
+                        }
+                    }
+                    i++;
+                }while (i < currentSpriteNumber);
+
+                i--;
+
+                Byte offset = 15 - pixelOffsetX;
+
+                Byte backgroundLSB = (shft_PatternLSB >> offset) & 0x1;
+                Byte backgroundMSB = (shft_PatternMSB >> offset) & 0x1;
+
+                Byte backroundPixel = (backgroundMSB << 1) | backgroundLSB;
+
+                if(colorOffset == 0 || (backroundPixel && (Secondary_OAM[spriteIndex][2] & 0x20)))
+                {
+                    Byte LSB = (shft_PaletteLow >> offset) & 0x1;
+                    Byte MSB = (shft_PaletteHigh >> offset) & 0x1;
+
+                    paletteRAMIndex = (MSB << 1) | LSB;
+
+                    Byte colorIndex = getColor(paletteRAMIndex,backroundPixel,false);
+                    memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+                }
+                else
+                {
+                    Byte spritePalleteIndex = Secondary_OAM[spriteIndex][2] & 0x3;
+                    Byte colorIndex = getColor(spritePalleteIndex,colorOffset,true);
+                    memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+
+                }
+
+                //Check for sprite zero hit
+                if(spriteIndex == 0)
+                {
+                    if(colorOffset && backroundPixel)
+                    {
+                        PPUSTATUS.spriteZeroHit = 1;
+                    }
+                }
+            }
+
+            //During the last 64 cycles of the visible scanline, the sprite evaluation for the next scanline is performed
+            if(cycle >= 193 && PPUMASK.renderSprites)
+            {
+                spriteEvaluation();
+            }
         }
 
         if((cycle <= 256 && cycle >= 1) || (cycle >= 328 && cycle <=336))
@@ -83,44 +177,7 @@ void PPU::executeCycle()
         if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
         {
             //This sequence is repeated every 8 cycles to load all the data for the current tile
-            switch ((cycle-1)%8)
-            {
-            case 1:
-                //Load pattern index from Nametable
-                patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
-                break;
-
-            case 3:
-                //Load byte from Attribute table
-                tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
-
-                //Only keep the information for the quadrant that the current pixel belongs to
-                if(VRAMAdress.tileOffsetY & 0x02)
-                    tileAttribute >>= 4;
-                if(VRAMAdress.tileOffsetX & 0x02)
-                    tileAttribute >>= 2;
-                tileAttribute &= 0x03;
-                break;
-
-            case 5:
-                //Load pattern low byte from Pattern Table
-                patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
-                break;
-
-            case 7:
-                //Load pattern high byte from Pattern Table
-                patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
-
-                if(renderEnabled())
-                {
-                    //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
-                    loadShiftRegisters();
-
-                    //Increment x component of VRAM
-                    incrementCurrentX();
-                }
-                break;
-            }
+            tileSequence();
         }
 
         //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
@@ -135,6 +192,11 @@ void PPU::executeCycle()
             updateCurrentX();
         }
 
+        if(cycle >= 259 && cycle <= 320)
+        {
+            if(PPUMASK.renderSprites)
+                spriteFetchingSequence();
+        }
     }
     //Pre-render scanline
     else if(scanline == 261)
@@ -147,54 +209,16 @@ void PPU::executeCycle()
             PPUSTATUS.spriteOverflow = 0;
         }
 
-        //if((cycle >= 1 && cycle <= 256) || (cycle >= 328 && cycle <=336))
         if((cycle >= 328 && cycle <=336))
         {
-            //Each cycle, the shift registers are shifted
+            //During the last cycles of the scanline, the shift registers are shifted
             shiftRegisters();
         }
 
         if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
         {
             //This sequence is repeated every 8 cycles to load all the data for the current tile
-            switch ((cycle-1)%8)
-            {
-            case 1:
-                //Load pattern index from Nametable
-                patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
-                break;
-
-            case 3:
-                //Load byte from Attribute table
-                tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
-
-                //Only keep the information for the quadrant that the current pixel belongs to
-                if(VRAMAdress.tileOffsetY & 0x02)
-                    tileAttribute >>= 4;
-                if(VRAMAdress.tileOffsetX & 0x02)
-                    tileAttribute >>= 2;
-                tileAttribute &= 0x03;
-                break;
-
-            case 5:
-                //Load pattern low byte from Pattern Table
-                patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
-                break;
-
-            case 7:
-                //Load pattern high byte from Pattern Table
-                patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
-
-                if(renderEnabled())
-                {
-                    //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
-                    loadShiftRegisters();
-
-                    //Increment x component of VRAM
-                    incrementCurrentX();
-                }
-                break;
-            }
+            tileSequence();
         }
 
         //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
@@ -413,7 +437,7 @@ void PPU::loadPatternRow(Byte *pixels, int ptrn_row, int patternIndex, int palet
         Byte pixel1 = (plane1Row >> i) & 0x01;
 
         Byte colorOffset = (pixel1 << 1) | pixel0;
-        Byte colorIndex = getColor(paletteIndex,colorOffset);
+        Byte colorIndex = getColor(paletteIndex,colorOffset,false);
 
 //        if(colorIndex == 0x0)
 //            //memcpy(&pixels[ptrn_row * PT_TABLE_COLS * PTRN_LNGHT * PIXEL_SIZE + (PTRN_LNGHT-1-i) * PIXEL_SIZE],&NESPallette[0x22][0],4);
@@ -437,14 +461,27 @@ int PPU::getPatternIndex(int tableRow, int tableCol)
     return PT_TABLE_COLS * tableRow + tableCol;
 }
 
-Byte PPU::getColor(int paletteIndex, Byte colorOffset)
+Byte PPU::getColor(int paletteIndex, Byte colorOffset, bool spritePalette)
 {
-    int index = paletteIndex*4 + colorOffset;
 
-    if(index == 0x04 || index == 0x08 || index == 0x0C)
+    if(colorOffset == 0)
+    {
         return memoryRead(0x3F00);
+    }
     else
-        return memoryRead(0x3F00 + index);
+    {
+
+        Byte index = paletteIndex*4 + colorOffset;
+
+        if(spritePalette)
+        {
+            return memoryRead(0x3F00 + index + 0x10);
+        }
+        else
+        {
+            return memoryRead(0x3F00 + index);
+        }
+    }
 }
 
 //Memory
@@ -606,6 +643,143 @@ void PPU::updateCurrentX()
     VRAMAdress.nametableX = tempVRAMAdress.nametableX;
 }
 
+void PPU::loadPixel()
+{
+    Byte offset = 15 - pixelOffsetX;
+
+    Byte LSB = (shft_PaletteLow >> offset) & 0x1;
+    Byte MSB = (shft_PaletteHigh >> offset) & 0x1;
+
+    paletteRAMIndex = (MSB << 1) | LSB;
+
+    LSB = (shft_PatternLSB >> offset) & 0x1;
+    MSB = (shft_PatternMSB >> offset) & 0x1;
+
+    colorOffset = (MSB << 1) | LSB;
+
+    Byte colorIndex = getColor(paletteRAMIndex,colorOffset,false);
+
+    memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+}
+
+void PPU::tileSequence()
+{
+    switch ((cycle-1)%8)
+    {
+    case 1:
+        //Load pattern index from Nametable
+        patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
+        break;
+
+    case 3:
+        //Load byte from Attribute table
+        tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
+
+        //Only keep the information for the quadrant that the current pixel belongs to
+        if(VRAMAdress.tileOffsetY & 0x02)
+            tileAttribute >>= 4;
+        if(VRAMAdress.tileOffsetX & 0x02)
+            tileAttribute >>= 2;
+        tileAttribute &= 0x03;
+        break;
+
+    case 5:
+        //Load pattern low byte from Pattern Table
+        patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
+        break;
+
+    case 7:
+        //Load pattern high byte from Pattern Table
+        patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
+
+        if(renderEnabled())
+        {
+            //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
+            loadShiftRegisters();
+
+            //Increment x component of VRAM
+            incrementCurrentX();
+        }
+        break;
+    }
+}
+
+void PPU::spriteFetchingSequence()
+{
+    if(spriteFetchingIndex < nextScanlineSpriteNumber)
+    {
+        switch ((cycle-1)%8)
+        {
+        case 5:
+            //Load [Pattern Low Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
+            if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
+            {
+                //Sprite flipped vertically
+                int size = 8;
+                if(PPUCTRL.spriteSize)
+                {
+                    //8x16 sprites
+                    size = 16;
+                }
+                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - (scanline +1));
+            }
+            else
+            {
+                //Sprite NOT flipped
+                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline + 1 - Secondary_OAM[spriteFetchingIndex][0]);
+            }
+            break;
+
+        case 7:
+            //Load [Pattern High Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
+            if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
+            {
+                int size = 8;
+                //Sprite flipped vertically
+                if(PPUCTRL.spriteSize)
+                {
+                    //8x16 sprites
+                    size = 16;
+                }
+                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - (scanline +1) + (PTRN_SIZE / 2));
+            }
+            else
+            {
+                //Sprite NOT flipped
+                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline + 1 - Secondary_OAM[spriteFetchingIndex][0] + (PTRN_SIZE / 2));
+            }
+
+            spriteFetchingIndex++;
+            break;
+        }
+    }
+}
+
+void PPU::spriteEvaluation()
+{
+    if(nextScanlineSpriteNumber < 9 )
+    {
+        //Check the sprite Y coordinate to see if the scanline is in the range of the sprite
+        if((scanline + 1) >= OAM[spriteEvaluationIndex][0] && (scanline + 1) <= (OAM[spriteEvaluationIndex][0] + 7 + 8* PPUCTRL.spriteSize))
+        {
+            if(nextScanlineSpriteNumber < 8)
+            {
+                //Transfer OAM entry to secondary OAM
+                memcpy(&Secondary_OAM[nextScanlineSpriteNumber][0],&OAM[spriteEvaluationIndex][0],4);
+
+                //Update sprite counter
+                nextScanlineSpriteNumber++;
+            }
+            else
+            {
+                PPUSTATUS.spriteOverflow = 1;
+            }
+        }
+
+        spriteEvaluationIndex++;
+    }
+}
+
 void PPU::shiftRegisters()
 {
     shft_PatternLSB <<= 1;
@@ -655,10 +829,13 @@ void PPU::cpuWrite(Byte value, Address address)
     }
     case RegAddress::OAMADDR:
     {
+        OAMADDR = value;
         break;
     }
     case RegAddress::OAMDATA:
     {
+        OAM[0][OAMADDR] = value;
+        OAMADDR++;
         break;
     }
     case RegAddress::PPUSCROLL:
@@ -733,6 +910,7 @@ Byte PPU::cpuRead(Address address)
     }
     case RegAddress::OAMDATA:
     {
+        return OAM[0][OAMADDR];
         break;
     }
     case RegAddress::PPUSCROLL:
@@ -773,7 +951,7 @@ Byte PPU::cpuRead(Address address)
 
 void PPU::OAM_DMA_Transfer(Byte value, int index)
 {
-    OAM[(OAMADDR + index) & 0xFF] = value;
+    OAM[0][(OAMADDR + index) & 0xFF] = value;
 }
 
 QString PPU::stringPPUState()

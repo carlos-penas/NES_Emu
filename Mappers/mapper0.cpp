@@ -70,6 +70,7 @@ Byte Mapper0::CPU_Read(Address address)
         {
             //PRG RAM not defined
             //throw NotMappedAddressException(address,ReadAttempt);
+            return 0x00;
         }
     }
     else if(address >= 0x8000)

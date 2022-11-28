@@ -53,12 +53,10 @@ HEADERS += \
     utils.h
 
 #-----SFML graphics library-----
-unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-graphics
-
 INCLUDEPATH += $$PWD/../../../../usr/include/SFML
 DEPENDPATH += $$PWD/../../../../usr/include/SFML
 
+unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-graphics
 unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-window
-
 unix:!macx: LIBS += -L$$PWD/../../../../usr/lib/x86_64-linux-gnu/ -lsfml-system
 #-------------------------------
