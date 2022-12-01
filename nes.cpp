@@ -103,7 +103,7 @@ void NES::run()
 #ifndef RENDERSCREEN
     //while(!cpu->HLT && systemCycles < 1611539 * 3)
     //while(!cpu->HLT && systemCycles < 3968225)
-    while(!cpu->HLT && systemCycles < 12260133 * 4)
+    while(!cpu->HLT && systemCycles < 17062759 * 3)
 #endif
     {
         //Execute 1 ppu cycle every system cycle
@@ -201,8 +201,8 @@ void NES::prueba()
 #endif
 #ifndef RENDERSCREEN
     //while(!cpu->HLT && systemCycles < 1611539 * 3)
-        while(!cpu->HLT && systemCycles < 3968225)
-    //while(!cpu->HLT && systemCycles < 10529989 * 3)
+    //while(!cpu->HLT && systemCycles < 3968225)
+    while(!cpu->HLT && systemCycles < 20062759 * 3)
 #endif
     {
         //Execute 1 ppu cycle every system cycle

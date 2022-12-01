@@ -7,7 +7,7 @@
 PPU::PPU()
 {
     PPUSTATUS.VBlank = 0;
-    //PPUSTATUS =0xA0;
+    //PPUSTATUS.value =0xA0;
     PPUSTATUS.value =0x00;
     PPUCTRL.value = 0;
     OAMADDR = 0;
@@ -31,6 +31,8 @@ PPU::PPU()
     NMI = false;
     frameComplete = false;
     oddFrame = false;
+    spriteZeroLoaded = false;
+    spriteZeroPrepared = false;
 }
 
 void PPU::connectCartridge(Cartridge *cartridge)
@@ -60,7 +62,8 @@ void PPU::executeCycle()
     {
         //if(scanline == OAM[0][0] && cycle == 29 && OAM[0][1] == 0xA2)
         //if(scanline == (OAM[0][0] +15)  && cycle == 321 && OAM[0][1] == 0x04)
-//        if(scanline == OAM[0][0]  && cycle == 55 && OAM[0][1] == 0xA2)
+        //if(scanline == 29  && cycle == 88 && Secondary_OAM[0][1] == 0xFF)
+//        if(OAM[0][1] == 0xFF && scanline == 30 && cycle >= 89 && cycle <= 97 && pixelOffsetX >0) //OAM[8][1] == 0x39 &&
 //        {
 //            int a = 1;
 //            int b = 2;
@@ -72,6 +75,8 @@ void PPU::executeCycle()
         {
             currentSpriteNumber = nextScanlineSpriteNumber;
             nextScanlineSpriteNumber = 0;
+            spriteZeroLoaded = spriteZeroPrepared;
+            spriteZeroPrepared = false;
             spriteEvaluationIndex = 0;
             spriteFetchingIndex = 0;
         }
@@ -89,42 +94,43 @@ void PPU::executeCycle()
                 Byte colorOffset = 0;
                 int spriteIndex = 0;
                 int i = 0;
+                bool spriteFound = false;
 
-                do
+                while (i < currentSpriteNumber)
                 {
-                    if(cycle > Secondary_OAM[i][3] && cycle <= (Secondary_OAM[i][3] + 8))
                     {
-                        Byte spriteLSB;
-                        Byte spriteMSB;
-                        if(Secondary_OAM[i][2] & 0x40) //Sprite is flipped horizontally
+                        if(cycle > spriteXposition[i] && cycle <= (spriteXposition[i] + 8))
                         {
-                            spriteLSB = shft_SpritePatternLSB[i] & 0x01;
-                            spriteMSB = shft_SpritePatternMSB[i] & 0x01;
+                            Byte spriteLSB;
+                            Byte spriteMSB;
+                            if(spriteAttribute[i] & 0x40) //Sprite is flipped horizontally
+                            {
+                                spriteLSB = shft_SpritePatternLSB[i] & 0x01;
+                                spriteMSB = shft_SpritePatternMSB[i] & 0x01;
 
-                            //Shift sprite registers
-                            shft_SpritePatternLSB[i] >>= 1;
-                            shft_SpritePatternMSB[i] >>= 1;
-                        }
-                        else
-                        {
-                            spriteLSB = (shft_SpritePatternLSB[i] & 0x80) >> 7;
-                            spriteMSB = (shft_SpritePatternMSB[i] & 0x80) >> 7;
+                                //Shift sprite registers
+                                shft_SpritePatternLSB[i] >>= 1;
+                                shft_SpritePatternMSB[i] >>= 1;
+                            }
+                            else
+                            {
+                                spriteLSB = (shft_SpritePatternLSB[i] & 0x80) >> 7;
+                                spriteMSB = (shft_SpritePatternMSB[i] & 0x80) >> 7;
 
-                            //Shift sprite registers
-                            shft_SpritePatternLSB[i] <<= 1;
-                            shft_SpritePatternMSB[i] <<= 1;
-                        }
+                                //Shift sprite registers
+                                shft_SpritePatternLSB[i] <<= 1;
+                                shft_SpritePatternMSB[i] <<= 1;
+                            }
 
-                        if(colorOffset == 0)
-                        {
-                            colorOffset = (spriteMSB << 1) | spriteLSB;
-                            spriteIndex = i;
+                            if(colorOffset == 0)
+                            {
+                                colorOffset = (spriteMSB << 1) | spriteLSB;
+                                spriteIndex = i;
+                            }
                         }
+                        i++;
                     }
-                    i++;
-                }while (i < currentSpriteNumber);
-
-                i--;
+                }
 
                 Byte offset = 15 - pixelOffsetX;
 
@@ -132,27 +138,28 @@ void PPU::executeCycle()
                 Byte backgroundMSB = (shft_PatternMSB >> offset) & 0x1;
 
                 Byte backroundPixel = (backgroundMSB << 1) | backgroundLSB;
+                Byte colorIndex = 0;
 
-                if(colorOffset == 0 || (backroundPixel && (Secondary_OAM[spriteIndex][2] & 0x20)))
+                if(colorOffset == 0 || (backroundPixel && (spriteAttribute[spriteIndex] & 0x20)))
                 {
                     Byte LSB = (shft_PaletteLow >> offset) & 0x1;
                     Byte MSB = (shft_PaletteHigh >> offset) & 0x1;
 
                     paletteRAMIndex = (MSB << 1) | LSB;
 
-                    Byte colorIndex = getColor(paletteRAMIndex,backroundPixel,false);
+                    colorIndex = getColor(paletteRAMIndex,backroundPixel,false);
                     memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
                 }
                 else
                 {
-                    Byte spritePalleteIndex = Secondary_OAM[spriteIndex][2] & 0x3;
-                    Byte colorIndex = getColor(spritePalleteIndex,colorOffset,true);
+                    Byte spritePalleteIndex = spriteAttribute[spriteIndex] & 0x3;
+                    colorIndex = getColor(spritePalleteIndex,colorOffset,true);
                     memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
 
                 }
 
                 //Check for sprite zero hit
-                if(spriteIndex == 0)
+                if(spriteIndex == 0 && spriteZeroLoaded)
                 {
                     if(colorOffset && backroundPixel)
                     {
@@ -710,6 +717,16 @@ void PPU::spriteFetchingSequence()
     {
         switch ((cycle-1)%8)
         {
+        case 2:
+            //Load [Attribute byte] of the current sprite from the secondary OAM
+            spriteAttribute[spriteFetchingIndex] = Secondary_OAM[spriteFetchingIndex][2];
+            break;
+        case 3:
+        {
+            //Load [X position] of the current sprite from the secondary OAM
+            spriteXposition[spriteFetchingIndex] = Secondary_OAM[spriteFetchingIndex][3];
+            break;
+        }
         case 5:
             //Load [Pattern Low Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
             if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
@@ -721,12 +738,12 @@ void PPU::spriteFetchingSequence()
                     //8x16 sprites
                     size = 16;
                 }
-                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - (scanline +1));
+                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - scanline);
             }
             else
             {
                 //Sprite NOT flipped
-                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline + 1 - Secondary_OAM[spriteFetchingIndex][0]);
+                shft_SpritePatternLSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline - Secondary_OAM[spriteFetchingIndex][0]);
             }
             break;
 
@@ -734,19 +751,19 @@ void PPU::spriteFetchingSequence()
             //Load [Pattern High Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
             if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
             {
-                int size = 8;
                 //Sprite flipped vertically
+                int size = 8;
                 if(PPUCTRL.spriteSize)
                 {
                     //8x16 sprites
                     size = 16;
                 }
-                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - (scanline +1) + (PTRN_SIZE / 2));
+                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - scanline + (PTRN_SIZE / 2));
             }
             else
             {
                 //Sprite NOT flipped
-                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline + 1 - Secondary_OAM[spriteFetchingIndex][0] + (PTRN_SIZE / 2));
+                shft_SpritePatternMSB[spriteFetchingIndex] = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline - Secondary_OAM[spriteFetchingIndex][0] + (PTRN_SIZE / 2));
             }
 
             spriteFetchingIndex++;
@@ -760,12 +777,19 @@ void PPU::spriteEvaluation()
     if(nextScanlineSpriteNumber < 9 )
     {
         //Check the sprite Y coordinate to see if the scanline is in the range of the sprite
-        if((scanline + 1) >= OAM[spriteEvaluationIndex][0] && (scanline + 1) <= (OAM[spriteEvaluationIndex][0] + 7 + 8* PPUCTRL.spriteSize))
+        if((scanline) >= OAM[spriteEvaluationIndex][0] && (scanline) <= (OAM[spriteEvaluationIndex][0] + 7 + 8* PPUCTRL.spriteSize))
         {
             if(nextScanlineSpriteNumber < 8)
             {
                 //Transfer OAM entry to secondary OAM
                 memcpy(&Secondary_OAM[nextScanlineSpriteNumber][0],&OAM[spriteEvaluationIndex][0],4);
+
+                //Check if the trasnfered entry is the sprite zero
+                if(spriteEvaluationIndex == 0)
+                {
+                    //Sprite Zero is prepared (loaded for the next scanline)
+                    spriteZeroPrepared = true;
+                }
 
                 //Update sprite counter
                 nextScanlineSpriteNumber++;
@@ -782,10 +806,13 @@ void PPU::spriteEvaluation()
 
 void PPU::shiftRegisters()
 {
-    shft_PatternLSB <<= 1;
-    shft_PatternMSB <<= 1;
-    shft_PaletteLow <<= 1;
-    shft_PaletteHigh <<= 1;
+    if(PPUMASK.renderBackground)
+    {
+        shft_PatternLSB <<= 1;
+        shft_PatternMSB <<= 1;
+        shft_PaletteLow <<= 1;
+        shft_PaletteHigh <<= 1;
+    }
 }
 
 void PPU::loadShiftRegisters()

@@ -118,6 +118,8 @@ private:
     uint16_t scanline;
 
     bool oddFrame;
+    bool spriteZeroLoaded;
+    bool spriteZeroPrepared;
 
     //Background Rendering
     Byte patternIndex;
@@ -136,6 +138,8 @@ private:
     //Sprite Rendering
     Register8 shft_SpritePatternLSB[8];
     Register8 shft_SpritePatternMSB[8];
+    Register8 spriteXposition[8];
+    Register8 spriteAttribute[8];
 
     Byte currentSpriteNumber;
     Byte nextScanlineSpriteNumber;

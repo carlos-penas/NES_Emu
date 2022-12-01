@@ -3325,7 +3325,6 @@ void CPU::OAM_DMACycle()
         if(OAM_DMA.cycles & 0x01)
         {
             //Odd DMA cycle
-            //memoryWrite(OAM_tempData,RegAddress::OAMDATA,false);
             bus->Write(OAM_tempData,RegAddress::OAMDATA);
         }
         else
