@@ -167,7 +167,7 @@ void NES::run()
             {
                 if(event.type == sf::Event::Closed)
                     window.close();
-                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
+                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
                 {
                     window.close();
                 }
@@ -262,7 +262,7 @@ void NES::prueba()
             {
                 if(event.type == sf::Event::Closed)
                     window.close();
-                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Enter)
+                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
                 {
                     window.close();
                 }

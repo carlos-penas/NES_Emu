@@ -2,12 +2,16 @@
 #include "stdio.h"
 #include <cstring>
 #include "compilationSettings.h"
+#include "Window.hpp"
 
 Bus::Bus()
 {
     memset(RAM,0,sizeof(RAM));
     memset(APU_IO,0,sizeof(APU_IO));
     memset(APU_Test,0,sizeof(APU_Test));
+
+    controllers[0] = 0;
+    controllers[1] = 0;
 }
 
 void Bus::connectCartridge(Cartridge *cartridge)
@@ -55,6 +59,10 @@ void Bus::Write(Byte value, Address address)
         printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         APU_IO[address & 0x001F] = value;
+        if(address >= 0x4016)
+        {
+            pollControllerInput(address - 0x4016);
+        }
     }
 
     //APU Test
@@ -95,7 +103,14 @@ Byte Bus::Read(Address address)
 #ifdef PRINTLOG
         printf("Lectura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
-        return APU_IO[address & 0x001F];
+        if(address >= 0x4016)
+        {
+            return readControllerData(address - 0x4016);
+        }
+        else
+        {
+            return APU_IO[address & 0x001F];
+        }
     }
 
     //APU Test
@@ -124,4 +139,79 @@ void Bus::OAM_DMA_Transfer(Byte ADH)
         Byte value = Read(address + i);
         ppu->OAM_DMA_Transfer(value,i);
     }
+}
+
+void Bus::pollControllerInput(int i)
+{
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))
+    {
+        controllers[i] |= 0x80;
+    }
+    else
+    {
+        controllers[i] &= 0x7F;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::A))
+    {
+        controllers[i] |= 0x40;
+    }
+    else
+    {
+        controllers[i] &= 0xBF;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::S))
+    {
+        controllers[i] |= 0x20;
+    }
+    else
+    {
+        controllers[i] &= 0xDF;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
+    {
+        controllers[i] |= 0x10;
+    }
+    else
+    {
+        controllers[i] &= 0xEF;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+    {
+        controllers[i] |= 0x8;
+    }
+    else
+    {
+        controllers[i] &= 0xF7;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::Tab))
+    {
+        controllers[i] |= 0x4;
+    }
+    else
+    {
+        controllers[i] &= 0xFB;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::M))
+    {
+        controllers[i] |= 0x2;
+    }
+    else
+    {
+        controllers[i] &= 0xFD;
+    }
+    if(sf::Keyboard::isKeyPressed(sf::Keyboard::K))
+    {
+        controllers[i] |= 0x1;
+    }
+    else
+    {
+        controllers[i] &= 0xFE;
+    }
+}
+
+Byte Bus::readControllerData(int i)
+{
+    Byte data = controllers[i] & 0x01;
+    controllers[i] >>= 1;
+    return data;
 }

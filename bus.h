@@ -25,8 +25,11 @@ private:
     Cartridge *cartridge;           // 49 KB
 
     PPU *ppu;
+    Register8 controllers[2];
 
     void OAM_DMA_Transfer(Byte addressH);
+    void pollControllerInput(int i);
+    Byte readControllerData(int i);
 };
 
 #endif // BUS_H
