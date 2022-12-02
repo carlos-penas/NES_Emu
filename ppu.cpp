@@ -70,10 +70,10 @@ void PPU::executeCycle()
             spriteFetchingIndex = 0;
         }
 
-
         //If we are on a part of the screen that is not blank (1-256), we load the pixel into the buffer
         if(cycle <= 256 && cycle >=1 && PPUMASK.renderBackground)
         {
+            //If there are no sprites on the scanline, a background pixel is loaded
             if(currentSpriteNumber == 0 || scanline == 0 || !PPUMASK.renderSprites)
             {
                 loadBackgroundPixel();
@@ -84,6 +84,7 @@ void PPU::executeCycle()
                 int spriteIndex = 0;
                 int i = 0;
 
+                //Try to find the first sprite in secondary OAM that is not transparent (colorId != 0)
                 while (i < currentSpriteNumber)
                 {
                     {
@@ -106,7 +107,6 @@ void PPU::executeCycle()
 
                             if(spriteColorId == 0)
                             {
-                                //Try to find the first sprite in secondary OAM that is not transparent (colorId != 0)
                                 spriteColorId = Utils::joinBits(spriteColorMSB,spriteColorLSB);
                                 spriteIndex = i;
                             }
@@ -120,6 +120,7 @@ void PPU::executeCycle()
 
                 Byte colorIndex = 0;
 
+                //Check priority and transparency to select the appropriate pixel
                 if(spriteColorId == 0 || (backgroundColorId && (spriteAttribute[spriteIndex] & 0x20)))
                 {
                     //The background pixel is selected
@@ -154,15 +155,15 @@ void PPU::executeCycle()
             }
         }
 
+        //Each cycle, the shift registers are shifted
         if((cycle <= 256 && cycle >= 1) || (cycle >= 328 && cycle <=336))
         {
-            //Each cycle, the shift registers are shifted
             shiftBackgroundRegisters();
         }
 
+        //The background fetching sequence is repeated every 8 cycles to load all the data for the next two tiles
         if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
         {
-            //This sequence is repeated every 8 cycles to load all the data for the next two tiles
             backgroundFetching();
         }
 
@@ -172,12 +173,13 @@ void PPU::executeCycle()
             incrementVRAM_AddressY();
         }
 
-        //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
+        //At cycle 257 of every scanline, the X component of the current VRAM address is restored to match the X component of temporal VRAM address
         if(cycle == 257 && renderEnabled())
         {
             restoreVRAM_AddressX();
         }
 
+        //During cycles (259-320), the sprite fetching sequence is performed
         if(cycle >= 259 && cycle <= 320)
         {
             if(PPUMASK.renderSprites)
@@ -195,31 +197,31 @@ void PPU::executeCycle()
             PPUSTATUS.spriteOverflow = 0;
         }
 
+        //During the last cycles of the pre-render scanline, the background registers are shifted
         if((cycle >= 328 && cycle <=336))
         {
-            //During the last cycles of the scanline, the background registers are shifted
             shiftBackgroundRegisters();
         }
 
-        if((cycle <= 256 && cycle >= 2) || (cycle >= 322 && cycle <=336))
+        //The background fetching sequence is repeated twice to load all the data for the first two tiles of the next scanline
+        if(cycle >= 322 && cycle <=336) // || (cycle >= 2 && cycle <= 256)
         {
-            //This sequence is repeated every 8 cycles to load all the data for the next two tiles
             backgroundFetching();
         }
 
-        //At cycle 256 of every scanline, the Y component of the current VRAM address is incremented
+        //At cycle 256 of the pre-render scanline, the Y component of the current VRAM address is incremented
         if(cycle == 256 && renderEnabled())
         {
             incrementVRAM_AddressY();
         }
 
-        //At cycle 257 of every scanline, the X component of the current VRAM address is updated with the contents of the temporal VRAM address
+        //At cycle 257 of the pre-render scanline, the X component of the current VRAM address is restored to match the X component of temporal VRAM address
         if(cycle == 257 && renderEnabled())
         {
             restoreVRAM_AddressX();
         }
 
-        //During cycles 280-304 of the pre-render scanline, the X component of the VRAM address is repeatedly updated with the contents of the temporal VRAM address
+        //During cycles 280-304 of the pre-render scanline, the X component of the VRAM address is repeatedly restored to match the Y component of temporal VRAM address
         if(cycle >= 280 && cycle <= 304 && renderEnabled())
         {
             restoreVRAM_AddressY();
@@ -236,12 +238,13 @@ void PPU::executeCycle()
         }
     }
 
-    //At the end of the visible part of scanline 239, the frame is complete
+    //At the end of the visible part of scanline 239, the frameComplete flag is set
     if(cycle == 257 && scanline == 239)
     {
         frameComplete = true;
     }
 
+    //The cycle and scanline counters are updated
     cycle++;
     if(cycle == 341)
     {
@@ -414,7 +417,9 @@ QString PPU::stringPPUState()
 //Memory
 Byte PPU::memoryRead(Address address)
 {
+#ifdef PRINTLOG
     Address realAddress = address;
+#endif
 
     address = address & 0x3FFF;
 
@@ -468,7 +473,9 @@ Byte PPU::memoryRead(Address address)
 
 void PPU::memoryWrite(Byte value, Address address)
 {
+#ifdef PRINTLOG
     Address realAddress = address;
+#endif
 
     address = address & 0x3FFF;
 
@@ -579,22 +586,23 @@ void PPU::loadPixel(Byte colorIndex)
 
 Byte PPU::getNESPaletteColor(int paletteIndex, Byte colorOffset, bool spritePalette)
 {
-
     if(colorOffset == 0)
     {
+        //The background color is returned
         return memoryRead(0x3F00);
     }
     else
     {
-
         Byte index = paletteIndex*4 + colorOffset;
 
         if(spritePalette)
         {
+            //The color is selected from one of the sprite palettes (second 16 bytes)
             return memoryRead(0x3F00 + index + 0x10);
         }
         else
         {
+            //The color is selected from one of the background palettes (first 16 bytes)
             return memoryRead(0x3F00 + index);
         }
     }
@@ -633,7 +641,7 @@ void PPU::backgroundFetching()
 
         if(renderEnabled())
         {
-            //At this point, we've got all the information for the next tile, so we load it in the LSB of the shift registers
+            //At this point, we've got all the information for the next tile, so we load it in the Low Byte of the shift registers
             loadBackgroundShiftRegisters();
 
             //Increment x component of VRAM
@@ -645,13 +653,13 @@ void PPU::backgroundFetching()
 
 void PPU::loadBackgroundShiftRegisters()
 {
-    //Load data for the next pattern on the LSB of the shift registers
+    //Load data for the next pattern on the Low Byte of the shift registers
     shft_PatternLSB.value &= 0xFF00;
     shft_PatternMSB.value &= 0xFF00;
     shft_PatternLSB.value |= patternLSB;
     shft_PatternMSB.value |= patternMSB;
 
-    //Load the (same) palette index on the LSB of the shift registers
+    //Load the (same) palette index on the Low Byte of the shift registers
     if(tileAttribute & 0b01)
         shft_PaletteLow.value |= 0xFF;
     else
@@ -665,18 +673,18 @@ void PPU::loadBackgroundShiftRegisters()
 
 Byte PPU::getBackgroundPalette(Byte offset)
 {
-    Byte LSB = (shft_PaletteLow.value >> offset) & 0x1;
-    Byte MSB = (shft_PaletteHigh.value >> offset) & 0x1;
+    Byte lsb = (shft_PaletteLow.value >> offset) & 0x1;
+    Byte msb = (shft_PaletteHigh.value >> offset) & 0x1;
 
-    return Utils::joinBits(MSB,LSB);
+    return Utils::joinBits(msb,lsb);
 }
 
 Byte PPU::getBackgroundColor(Byte offset)
 {
-    Byte LSB = (shft_PatternLSB.value >> offset) & 0x1;
-    Byte MSB = (shft_PatternMSB.value >> offset) & 0x1;
+    Byte lsb = (shft_PatternLSB.value >> offset) & 0x1;
+    Byte msb = (shft_PatternMSB.value >> offset) & 0x1;
 
-    return Utils::joinBits(MSB,LSB);
+    return Utils::joinBits(msb,lsb);
 }
 
 void PPU::loadBackgroundPixel()
@@ -729,7 +737,6 @@ void PPU::spriteEvaluation()
                 PPUSTATUS.spriteOverflow = 1;
             }
         }
-
         spriteEvaluationIndex++;
     }
 }
@@ -798,7 +805,7 @@ void PPU::spriteFetching()
 Byte PPU::getSpriteColorLSB(int i, bool spriteFlipped)
 {
     Byte colorId = 0;
-    if(spriteFlipped)
+    if(spriteFlipped)   //Horizontally
     {
         colorId = shft_SpritePatternLSB[i].value & 0x01;
         shft_SpritePatternLSB[i].shiftRight();
@@ -814,7 +821,7 @@ Byte PPU::getSpriteColorLSB(int i, bool spriteFlipped)
 Byte PPU::getSpriteColorMSB(int i, bool spriteFlipped)
 {
     Byte colorId = 0;
-    if(spriteFlipped)
+    if(spriteFlipped)   //Horizontally
     {
         colorId = shft_SpritePatternMSB[i].value & 0x01;
         shft_SpritePatternMSB[i].shiftRight();
