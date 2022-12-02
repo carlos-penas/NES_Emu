@@ -17,7 +17,6 @@ public:
     ~NES();
     bool loadGame(string path);
     void run();
-    void prueba();
 
 private:
     uint64_t systemCycles;

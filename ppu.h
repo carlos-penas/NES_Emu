@@ -4,6 +4,8 @@
 #include "cartridge.h"
 #include "utils.h"
 
+using namespace PPURegisters;
+
 enum RegAddress{
     PPUCTRL   = 0x2000,
     PPUMASK   = 0x2001,
@@ -15,60 +17,6 @@ enum RegAddress{
     PPUDATA   = 0x2007,
 };
 
-union AddressRegister{
-    struct{
-        Register16 tileOffsetX : 5;
-        Register16 tileOffsetY : 5;
-        Register16 nametableX : 1;
-        Register16 nametableY : 1;
-        Register16 pixelOffsetY : 3;
-        Register16 unused : 1;
-    };
-    Register16  value;
-
-    struct{
-        Register8 LByte;
-        Register8 HByte;
-    };
-};
-
-union ControlRegister{
-    struct{
-        Register8 nametableX : 1;
-        Register8 nametableY : 1;
-        Register8 VRAMincrement : 1;
-        Register8 spriteAdress : 1;
-        Register8 backgroundAddress : 1;
-        Register8 spriteSize : 1;
-        Register8 MstSlvMode : 1;
-        Register8 generateNMI : 1;
-    };
-    Register8 value;
-};
-
-union StatusRegister{
-    struct{
-        Register8 unused : 5;
-        Register8 spriteOverflow : 1;
-        Register8 spriteZeroHit : 1;
-        Register8 VBlank : 1;
-    };
-    Register8 value;
-};
-
-union MaskRegister{
-    struct{
-        Register8 greyScale : 1;
-        Register8 showLeftBackground : 1;
-        Register8 showLeftSprites : 1;
-        Register8 renderBackground : 1;
-        Register8 renderSprites : 1;
-        Register8 emphasizeRed : 1;
-        Register8 emphasizeGreen : 1;
-        Register8 emphasizeBlue : 1;
-    };
-    Register8 value;
-};
 
 class PPU
 {
@@ -86,17 +34,9 @@ public:
 
     void executeCycle();
 
-    void drawFrame();
-
-    void drawPatternTable();
-
-    void drawNameTable();
-
-    //When cpu tries to access from PPU registers
-    void cpuWrite(Byte value, Address address);
+    //CPU Access to PPU Registers
     Byte cpuRead(Address address);
-
-    void OAM_DMA_Transfer(Byte value, int index);
+    void cpuWrite(Byte value, Address address);
 
     QString stringPPUState();
 
@@ -113,83 +53,17 @@ private:
     Register8 OAM[64][4];                   // 256 Bytes
     Register8 Secondary_OAM[8][4];          //  32 Bytes
 
+    //Buffer to render the pixels
+    Byte *pixels;
+
     //Cycles
     uint16_t cycle;
     uint16_t scanline;
 
+    //Flags
     bool oddFrame;
     bool spriteZeroLoaded;
     bool spriteZeroPrepared;
-
-    //Background Rendering
-    Byte patternIndex;
-    Byte tileAttribute;
-    Byte patternLSB;
-    Byte patternMSB;
-
-    Register16 shft_PatternLSB;
-    Register16 shft_PatternMSB;
-    Register16 shft_PaletteLow;
-    Register16 shft_PaletteHigh;
-
-    Byte colorOffset;
-    Byte paletteRAMIndex;
-
-    //Sprite Rendering
-    Register8 shft_SpritePatternLSB[8];
-    Register8 shft_SpritePatternMSB[8];
-    Register8 spriteXposition[8];
-    Register8 spriteAttribute[8];
-
-    Byte currentSpriteNumber;
-    Byte nextScanlineSpriteNumber;
-    Byte spriteEvaluationIndex;
-    Byte spriteFetchingIndex;
-
-    uint64_t currentPixel;
-
-    //Buffer to render the pixels
-    Byte *pixels;
-
-    Byte color1 [4] = {0,0,0,0};
-    Byte color2 [4] = {247, 2, 149,255};
-    Byte color4 [4] = {65, 242, 216,255};
-    Byte color3 [4] = {120, 10, 10,255};
-
-
-    Byte NESPallette [64][4] =
-    {
-        {84,84,84,255},   {0,30,116,255},   {8,16,144,255},   {48,0,136,255},   {68,0,100,255},   {92,0,48,255},    {84,4,0,255},     {60,24,0,255},    {32,42,0,255},    {8,58,0,255},     {0,64,0,255},     {0,60,0,255},     {0,50,60,255},    {0,0,0,0},        {0,0,0,0},{0,0,0,0},
-        {152,150,152,255},{8,76,196,255},   {48,50,236,255},  {92,30,228,255},  {136,20,176,255}, {160,20,100,255}, {152,34,32,255},  {120,60,0,255},   {84,90,0,255},    {40,114,0,255},   {8,124,0,255},    {0,118,40,255},   {0,102,120,255},  {0,0,0,0},        {0,0,0,0},{0,0,0,0},
-        {236,238,236,255},{76,154,236,255}, {120,124,236,255},{176,98,236,255}, {228,84,236,255}, {236,88,180,255}, {236,106,100,255},{212,136,32,255}, {160,170,0,255},  {116,196,0,255},  {76,208,32,255},  {56,204,108,255}, {56,180,204,255}, {60,60,60,255},   {0,0,0,0},{0,0,0,0},
-        {236,238,236,255},{168,204,236,255},{188,188,236,255},{212,178,236,255},{236,174,236,255},{236,174,212,255},{236,180,176,255},{228,196,144,255},{204,210,120,255},{180,122,120,255},{168,226,144,255},{152,226,180,255},{160,214,228,255},{160,162,160,255},{0,0,0,0},{0,0,0,0}
-    };
-
-    Byte getPaletteIndex(int blockIndex, int blockAttribute);
-
-    void loadPattern(int tableRow, int tableCol, Byte *pixels);
-    void loadPatternRow(Byte *pixels, int ptrn_row, int patternIndex, int paletteIndex);
-    int getPatternIndex(int tableRow, int tableCol);
-    Byte getColor(int paletteIndex, Byte colorOffset, bool spritePalette);
-
-    //Memory
-    void memoryWrite(Byte value, Address address);
-    Byte memoryRead(Address address);
-
-    //Scrolling
-    void incrementCurrentY();
-    void incrementCurrentX();
-    void updateCurrentY();
-    void updateCurrentX();
-
-    //Render
-    void loadPixel();
-    void tileSequence();
-    void spriteFetchingSequence();
-    void spriteEvaluation();
-    void shiftRegisters();
-    void loadShiftRegisters();
-    bool renderEnabled(){return PPUMASK.renderBackground || PPUMASK.renderSprites;};
 
     //Registers
     ControlRegister PPUCTRL;
@@ -206,6 +80,68 @@ private:
 
     Register8 internalBuffer;
 
+    Byte NESPallette [64][4] =
+    {
+        {84,84,84,255},   {0,30,116,255},   {8,16,144,255},   {48,0,136,255},   {68,0,100,255},   {92,0,48,255},    {84,4,0,255},     {60,24,0,255},    {32,42,0,255},    {8,58,0,255},     {0,64,0,255},     {0,60,0,255},     {0,50,60,255},    {0,0,0,0},        {0,0,0,0},{0,0,0,0},
+        {152,150,152,255},{8,76,196,255},   {48,50,236,255},  {92,30,228,255},  {136,20,176,255}, {160,20,100,255}, {152,34,32,255},  {120,60,0,255},   {84,90,0,255},    {40,114,0,255},   {8,124,0,255},    {0,118,40,255},   {0,102,120,255},  {0,0,0,0},        {0,0,0,0},{0,0,0,0},
+        {236,238,236,255},{76,154,236,255}, {120,124,236,255},{176,98,236,255}, {228,84,236,255}, {236,88,180,255}, {236,106,100,255},{212,136,32,255}, {160,170,0,255},  {116,196,0,255},  {76,208,32,255},  {56,204,108,255}, {56,180,204,255}, {60,60,60,255},   {0,0,0,0},{0,0,0,0},
+        {236,238,236,255},{168,204,236,255},{188,188,236,255},{212,178,236,255},{236,174,236,255},{236,174,212,255},{236,180,176,255},{228,196,144,255},{204,210,120,255},{180,122,120,255},{168,226,144,255},{152,226,180,255},{160,214,228,255},{160,162,160,255},{0,0,0,0},{0,0,0,0}
+    };
+
+    //Background Rendering
+    Byte patternIndex;
+    Byte tileAttribute;
+    Byte patternLSB;
+    Byte patternMSB;
+
+    ShiftRegister16 shft_PatternLSB;
+    ShiftRegister16 shft_PatternMSB;
+    ShiftRegister16 shft_PaletteLow;
+    ShiftRegister16 shft_PaletteHigh;
+
+    Byte backgroundColorId;
+    Byte backgroundPaletteIndex;
+
+    //Sprite Rendering
+    ShiftRegister8 shft_SpritePatternLSB[8];
+    ShiftRegister8 shft_SpritePatternMSB[8];
+
+    Register8 spriteXposition[8];
+    Register8 spriteAttribute[8];
+
+    Byte currentSpriteNumber;
+    Byte nextScanlineSpriteNumber;
+    Byte spriteEvaluationIndex;
+    Byte spriteFetchingIndex;
+
+    //Memory
+    Byte memoryRead(Address address);
+    void memoryWrite(Byte value, Address address);
+
+    //Scrolling
+    void incrementVRAM_AddressX();
+    void incrementVRAM_AddressY();
+    void restoreVRAM_AddressX();
+    void restoreVRAM_AddressY();
+
+    //Render
+    void loadPixel(Byte colorIndex);
+    bool renderEnabled(){return PPUMASK.renderBackground || PPUMASK.renderSprites;};
+    Byte getNESPaletteColor(int paletteIndex, Byte backgroundColorId, bool spritePalette);
+
+    //Background
+    void backgroundFetching();
+    void loadBackgroundShiftRegisters();
+    Byte getBackgroundPalette(Byte offset);
+    Byte getBackgroundColor(Byte offset);
+    void loadBackgroundPixel();
+    void shiftBackgroundRegisters();
+
+    //Sprite
+    void spriteEvaluation();
+    void spriteFetching();
+    Byte getSpriteColorLSB(int i, bool spriteFlipped);
+    Byte getSpriteColorMSB(int i, bool spriteFlipped);
 };
 
 #endif // PPU_H

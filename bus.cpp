@@ -131,16 +131,6 @@ Byte Bus::Read(Address address)
     return 0x00; //Nunca debería llegar aquí.
 }
 
-void Bus::OAM_DMA_Transfer(Byte ADH)
-{
-    Address address = Utils::joinBytes(ADH,00);
-    for(int i = 0; i < 256; i++)
-    {
-        Byte value = Read(address + i);
-        ppu->OAM_DMA_Transfer(value,i);
-    }
-}
-
 void Bus::pollControllerInput(int i)
 {
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))

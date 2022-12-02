@@ -27,7 +27,6 @@ private:
     PPU *ppu;
     Register8 controllers[2];
 
-    void OAM_DMA_Transfer(Byte addressH);
     void pollControllerInput(int i);
     Byte readControllerData(int i);
 };
