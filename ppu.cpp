@@ -1,7 +1,6 @@
 #include "ppu.h"
 #include "constants.h"
 #include <cstring>
-#include <unistd.h>
 #include "compilationSettings.h"
 
 PPU::PPU()
@@ -87,32 +86,30 @@ void PPU::executeCycle()
                 //Try to find the first sprite in secondary OAM that is not transparent (colorId != 0)
                 while (i < currentSpriteNumber)
                 {
+                    if(cycle > spriteXposition[i] && cycle <= (spriteXposition[i] + 8))
                     {
-                        if(cycle > spriteXposition[i] && cycle <= (spriteXposition[i] + 8))
+                        Byte spriteColorLSB;
+                        Byte spriteColorMSB;
+                        if(spriteAttribute[i] & 0x40)
                         {
-                            Byte spriteColorLSB;
-                            Byte spriteColorMSB;
-                            if(spriteAttribute[i] & 0x40)
-                            {
-                                //Sprite is flipped horizontally
-                                spriteColorLSB = getSpriteColorLSB(i,true);
-                                spriteColorMSB = getSpriteColorMSB(i,true);
-                            }
-                            else
-                            {
-                                //Sprite is NOT flipped horizontally
-                                spriteColorLSB = getSpriteColorLSB(i,false);
-                                spriteColorMSB = getSpriteColorMSB(i,false);
-                            }
-
-                            if(spriteColorId == 0)
-                            {
-                                spriteColorId = Utils::joinBits(spriteColorMSB,spriteColorLSB);
-                                spriteIndex = i;
-                            }
+                            //Sprite is flipped horizontally
+                            spriteColorLSB = getSpriteColorLSB(i,true);
+                            spriteColorMSB = getSpriteColorMSB(i,true);
                         }
-                        i++;
+                        else
+                        {
+                            //Sprite is NOT flipped horizontally
+                            spriteColorLSB = getSpriteColorLSB(i,false);
+                            spriteColorMSB = getSpriteColorMSB(i,false);
+                        }
+
+                        if(spriteColorId == 0)
+                        {
+                            spriteColorId = Utils::joinBits(spriteColorMSB,spriteColorLSB);
+                            spriteIndex = i;
+                        }
                     }
+                    i++;
                 }
 
                 Byte offset = 15 - pixelOffsetX;
@@ -409,9 +406,13 @@ void PPU::cpuWrite(Byte value, Address address)
     }
 }
 
-QString PPU::stringPPUState()
+string PPU::stringPPUState()
 {
-    return QString("PPU %1,%2").arg(cycle,3,10,QLatin1Char(' ')).arg(scanline,3,10,QLatin1Char(' '));
+    stringstream s1,s2;
+    s1 << setfill(' ') << setw(3) << cycle;
+    s2 << setfill(' ') << setw(3) << scanline;
+
+    return "PPU " + s1.str() + "," + s2.str();
 }
 
 //Memory

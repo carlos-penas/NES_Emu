@@ -2,7 +2,6 @@
 #include "cpuOpCodes.h"
 #include "utils.h"
 #include "stdio.h"
-#include <cstring>
 #include <unistd.h>
 #include "compilationSettings.h"
 
@@ -2947,31 +2946,32 @@ CPUInstruction CPU::decodeInstruction()
     }
 }
 
-QString CPU::stringCPUState()
+
+string CPU::stringCPUState()
 {
-    QString cpuState;
-    QString sPC = Utils::hexString16(pc);
-    QString sOpCode = Utils::hexString(currentInstruction.OpCode);
-    QString sData1 = Utils::hexString(currentInstruction.Data1);
-    QString sData2 = Utils::hexString(currentInstruction.Data2);
-    QString sA = Utils::hexString(A);
-    QString sX = Utils::hexString(X);
-    QString sY = Utils::hexString(Y);
-    QString sP = Utils::hexString(P);
-    QString sSP = Utils::hexString(sp);
-    QString sName = formatName(currentInstruction.Name);
+    string cpuState;
+    string sPC = Utils::hexString16(pc);
+    string sOpCode = Utils::hexString(currentInstruction.OpCode);
+    string sData1 = Utils::hexString(currentInstruction.Data1);
+    string sData2 = Utils::hexString(currentInstruction.Data2);
+    string sA = Utils::hexString(A);
+    string sX = Utils::hexString(X);
+    string sY = Utils::hexString(Y);
+    string sP = Utils::hexString(P);
+    string sSP = Utils::hexString(sp);
+    string sName = formatName(currentInstruction.Name);
 
     if (currentInstruction.Bytes == 1)
     {
-        cpuState = QString("%1  %2        %8 A:%3 X:%4 Y:%5 P:%6 SP:%7 ").arg(sPC).arg(sOpCode).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
+        cpuState = "" + sPC + "  " + sOpCode +  "        " + sName + " A:" + sA + " X:" + sX + " Y:" + sY + " P:" + sP + " SP:" + sSP;
     }
     else if(currentInstruction.Bytes == 2)
     {
-        cpuState = QString("%1  %2 %3     %9 A:%4 X:%5 Y:%6 P:%7 SP:%8 ").arg(sPC).arg(sOpCode).arg(sData1).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
+        cpuState = "" + sPC + "  " + sOpCode + " " + sData1 +  "     " + sName + " A:" + sA + " X:" + sX + " Y:" + sY + " P:" + sP + " SP:" + sSP;
     }
     else
     {
-        cpuState = QString("%1  %2 %3 %4  %10 A:%5 X:%6 Y:%7 P:%8 SP:%9 ").arg(sPC).arg(sOpCode).arg(sData1).arg(sData2).arg(sA).arg(sX).arg(sY).arg(sP).arg(sSP).arg(sName);
+        cpuState = "" + sPC + "  " + sOpCode + " " + sData1 + " " + sData2 +  "  " + sName + " A:" + sA + " X:" + sX + " Y:" + sY + " P:" + sP + " SP:" + sSP;
     }
 
     return cpuState;
@@ -2982,25 +2982,24 @@ void CPU::activateNMI()
     NMI.activate(7);
 }
 
-QString CPU::formatName(QString instructionName)
+string CPU::formatName(string instructionName)
 {
-    QString filler;
+    stringstream s;
     if(currentInstruction.Bytes == 1)
     {
-        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1));
-        return "[" + instructionName + "]" + filler;
+        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1)) << "";
+        return "[" + instructionName + "]" + s.str();
     }
     if(currentInstruction.Bytes == 2)
     {
-        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2);
-        return "[" + instructionName + QString(" $%1").arg(Utils::hexString(currentInstruction.Data1)) + "]" + filler;
+        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
+        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Data1) + "]" + s.str();
     }
     else
     {
-        filler.fill(' ', 21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2);
-        return "[" + instructionName + QString(" $%1%2").arg(Utils::hexString(currentInstruction.Data2)).arg(Utils::hexString(currentInstruction.Data1)) + "]" + filler;
+        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
+        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Data2) + Utils::hexString(currentInstruction.Data1) + "]" + s.str();
     }
-
 }
 
 /*Addressing modes*/

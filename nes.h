@@ -4,7 +4,6 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "compilationSettings.h"
-#include <QElapsedTimer>
 
 #ifdef RENDERSCREEN
 #include "Graphics.hpp"
@@ -28,7 +27,7 @@ private:
     sf::Texture pixels_texture;
     sf::Sprite pixels_sprite;
     sf::Event event;
-    QElapsedTimer timer;
+    sf::Clock timer;
 #endif
     Byte *pixels;
 

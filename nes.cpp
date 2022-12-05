@@ -92,18 +92,19 @@ void NES::run()
 
 #ifdef PRINTLOG
     cpu->readyToPrint = false;
-    QString state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: " + QString::number(cpu->getCycles());
-    printf("%s\n",state.toUtf8().data());
+    string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
+    printf("%s%ld\n",state.data(),cpu->getCycles());
 #endif
 
 #ifdef RENDERSCREEN
-    timer.start();
+    timer.restart();
     while(!cpu->HLT && window.isOpen())
 #endif
 #ifndef RENDERSCREEN
     //while(!cpu->HLT && systemCycles < 1611539 * 3)
+    while(!cpu->HLT && systemCycles < 1250 * 3)
     //while(!cpu->HLT && systemCycles < 3968225)
-    while(!cpu->HLT && systemCycles < 17062759 * 3)
+    //while(!cpu->HLT && systemCycles < 17062759 * 3)
 #endif
     {
         //Execute 1 ppu cycle every system cycle
@@ -120,8 +121,8 @@ void NES::run()
             if(cpu->readyToPrint)
             {
                 cpu->readyToPrint = false;
-                QString state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: " + QString::number(cpu->getCycles());
-                printf("%s\n",state.toUtf8().data());
+                string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
+                printf("%s%ld\n",state.data(),cpu->getCycles());
             }
 #endif
         }
@@ -146,14 +147,14 @@ void NES::run()
             pixels_texture.update(pixels);
             window.draw(pixels_sprite);
 
-            if(timer.nsecsElapsed() > 16666666)
+            if(timer.getElapsedTime().asMicroseconds() > 16666)
             {
                 printf("ATENCION, SE ESTÁ RALENTIZANDO EL JUEGO\n");
             }
             //printf("T = %lld\n", timer.nsecsElapsed());
 
-            //Render screen every ~16666666 ns (for 60 fps)
-            while(timer.nsecsElapsed() < 16666666)
+            //Render screen every ~16666 us (for 60 fps)
+            while(timer.getElapsedTime().asMicroseconds() < 16666)
             {
                 continue;
             }

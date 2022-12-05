@@ -19,7 +19,7 @@ public:
 
     void disconnectBUS();
 
-    QString stringCPUState();
+    std::string stringCPUState();
     uint64_t getCycles() {return totalCycles;};
 
     void activateNMI();
@@ -59,7 +59,7 @@ private:
 
     CPUInstruction decodeInstruction();
 
-    QString formatName(QString instructionName);
+    string formatName(string instructionName);
 
     //Addressing modes
     Address zeroPageAddress(Byte ADL);
