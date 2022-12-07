@@ -60,7 +60,6 @@ public:
     bool loadROM(string path);
     void CPU_Write(Byte value, Address address);
     Byte CPU_Read(Address address);
-    Byte* PPU_GetPattern(uint16_t index);
     Byte PPU_Read(Address address);
 
     MirroringType getMirroringType() {return nametableMirroring;};

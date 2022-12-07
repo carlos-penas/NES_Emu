@@ -16,7 +16,6 @@ public:
     virtual void CPU_Write(Byte value, Address address) = 0;
     virtual Byte CPU_Read(Address address) = 0;
 
-    virtual Byte* PPU_GetPattern(uint16_t index) = 0;
     virtual Byte PPU_Read(Address address) = 0;
 
 protected:
