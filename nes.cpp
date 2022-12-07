@@ -175,6 +175,14 @@ void NES::run()
                 {
                     window.close();
                 }
+                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1)
+                {
+                    window.setSize(sf::Vector2u(PICTURE_WIDTH*2,PICTURE_HEIGHT*2));
+                }
+                else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F2)
+                {
+                    window.setSize(sf::Vector2u(PICTURE_WIDTH*3,PICTURE_HEIGHT*3));
+                }
             }
         }
 #endif
