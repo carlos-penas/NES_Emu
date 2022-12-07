@@ -1,5 +1,3 @@
-//#define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/nestest.nes"
-#define ROMPATH2 "/home/carlos/programming/NES_Emulator/Documents/ROMs/Ice_Climber.nes"
 #include "nes.h"
 
 int main(int argc,char* argv[])
@@ -8,7 +6,8 @@ int main(int argc,char* argv[])
 
     if(argc == 1)
     {
-        path = ROMPATH2;
+        printf("Se debe especificar una ROM\n");
+        return 0;
     }else
     {
         path = argv[1];

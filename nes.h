@@ -6,7 +6,11 @@
 #include "compilationSettings.h"
 
 #ifdef RENDERSCREEN
+#ifdef COMPILE_WINDOWS
+#include "SFML/Graphics.hpp"
+#else
 #include "Graphics.hpp"
+#endif
 #endif
 
 class NES
@@ -19,6 +23,7 @@ public:
 
 private:
     uint64_t systemCycles;
+    uint64_t delayedFrames;
     Byte cycleCounter;
 
     //Screen rendering

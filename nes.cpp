@@ -5,6 +5,8 @@ NES::NES()
 {
     systemCycles = 0;
     cycleCounter = 3;
+    delayedFrames = 0;
+    event = sf::Event();
     bus = new Bus;
     cartridge = new Cartridge;
     ppu = new PPU;
@@ -12,8 +14,8 @@ NES::NES()
 
 #ifdef RENDERSCREEN
     //Load icon from png
-    sf::Image icon;
-    icon.loadFromFile("/home/carlos/programming/NES_Emulator/Documents/NES_Icon.png");
+    //sf::Image icon;
+    //icon.loadFromFile("/home/carlos/programming/NES_Emulator/Documents/NES_Icon.png");
 
     //Set window actual resolution
     window.create(sf::VideoMode(PICTURE_WIDTH,PICTURE_HEIGHT),"Nintendo Entertainment System");
@@ -22,7 +24,7 @@ NES::NES()
     window.setSize(sf::Vector2u(PICTURE_WIDTH*RES_MULTIPLYER,PICTURE_HEIGHT*RES_MULTIPLYER));
 
     //Set window icon
-    window.setIcon(icon.getSize().x,icon.getSize().y,icon.getPixelsPtr());
+    //window.setIcon(icon.getSize().x,icon.getSize().y,icon.getPixelsPtr());
 
     //Center Screen
     sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
@@ -149,6 +151,7 @@ void NES::run()
 
             if(timer.getElapsedTime().asMicroseconds() > 16666)
             {
+                delayedFrames++;
                 printf("ATENCION, SE ESTÁ RALENTIZANDO EL JUEGO\n");
             }
             //printf("T = %lld\n", timer.nsecsElapsed());
@@ -177,5 +180,6 @@ void NES::run()
 #endif
     }
 
-    printf("Executed for %ld cycles\n",systemCycles);
+    printf("Cycles executed: %ld\n",systemCycles);
+    printf("Delayed frames: %ld\n", delayedFrames);
 }

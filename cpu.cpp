@@ -2,7 +2,6 @@
 #include "cpuOpCodes.h"
 #include "utils.h"
 #include "stdio.h"
-#include <unistd.h>
 #include "compilationSettings.h"
 
 CPU::CPU(Bus *bus)

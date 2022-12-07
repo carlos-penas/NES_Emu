@@ -2,7 +2,12 @@
 #include "stdio.h"
 #include <cstring>
 #include "compilationSettings.h"
+
+#ifdef COMPILE_WINDOWS
+#include "SFML/Window.hpp"
+#else
 #include "Window.hpp"
+#endif
 
 Bus::Bus()
 {

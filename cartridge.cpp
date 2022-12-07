@@ -18,7 +18,7 @@ Cartridge::~Cartridge()
 
 bool Cartridge::loadROM(string path)
 {
-    ifstream file(path);
+    ifstream file(path, ios_base::in | ios_base::binary);
     NES_Header header;
 
     uint16_t PRG_RAM_Size = 0;
@@ -77,12 +77,11 @@ bool Cartridge::loadROM(string path)
     file.read((char*)CHR_ROM.data(),CHR_ROM_Size);
     file.close();
 
-    printf("Mapper num: %d\n",mapperId);
+    printf("Mapper number: %d\n",mapperId);
     printf("Header version %d\n",headerType);
-    cout << "Tamaño ROM: " << PRG_ROM_Size << endl;
-    cout << "Tamaño RAM: " << PRG_RAM_Size << endl;
-    cout << "Tamaño CHR: " << CHR_ROM_Size << endl;
-
+    cout << "ROM Size: " << PRG_ROM_Size << endl;
+    cout << "RAM Size: " << PRG_RAM_Size << endl;
+    cout << "CHR Size: " << CHR_ROM_Size << endl;
 
     if(mapperId == 0)
     {

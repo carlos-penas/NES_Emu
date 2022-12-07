@@ -1,7 +1,7 @@
 #ifndef CPU_H
 #define CPU_H
 #include "types.h"
-#include <cpuinstruction.h>
+#include "cpuinstruction.h"
 #include "bus.h"
 #include "interrupt.h"
 

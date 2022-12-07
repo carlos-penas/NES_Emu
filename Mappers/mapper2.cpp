@@ -13,16 +13,16 @@ void Mapper2::CPU_Write(Byte value, Address address)
 
 Byte Mapper2::CPU_Read(Address address)
 {
-
+    return 0;
 }
 
 Byte* Mapper2::PPU_GetPattern(uint16_t index)
 {
-
+    return 0;
 }
 
 Byte Mapper2::PPU_Read(Address address)
 {
-
+    return 0;
 }
 
