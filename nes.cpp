@@ -169,16 +169,20 @@ void NES::run()
             //Manage keyboard inputs
             while (window.pollEvent(event))
             {
+                //Close the window when pressing the X on the window
                 if(event.type == sf::Event::Closed)
                     window.close();
+                //Close the window when pressing the ESC key
                 else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)
                 {
                     window.close();
                 }
+                //Resize the window to x2 the original NES size when pressing the F1 key
                 else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1)
                 {
                     window.setSize(sf::Vector2u(PICTURE_WIDTH*2,PICTURE_HEIGHT*2));
                 }
+                //Resize the window to x3 the original NES size when pressing the F2 key
                 else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F2)
                 {
                     window.setSize(sf::Vector2u(PICTURE_WIDTH*3,PICTURE_HEIGHT*3));

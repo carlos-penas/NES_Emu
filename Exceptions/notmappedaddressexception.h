@@ -1,10 +1,15 @@
 #ifndef NOTMAPPEDADDRESSEXCEPTION_H
 #define NOTMAPPEDADDRESSEXCEPTION_H
 #include <exception>
-#include "types.h"
 #include <cstring>
 #include <sstream>
 #include "compilationSettings.h"
+
+#ifdef COMPILE_WINDOWS
+#include "../types.h"
+#else
+#include "types.h"
+#endif
 
 enum AccessType{
     ReadAttempt,
@@ -28,8 +33,7 @@ public:
         char * str = new char[60];
 #ifdef COMPILE_WINDOWS
         strcpy_s(str,ss.str().length(), ss.str().c_str());
-#endif
-#ifndef COMPILE_WINDOWS
+#else
         strcpy(str,ss.str().c_str());
 #endif
         return str;

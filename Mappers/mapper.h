@@ -1,7 +1,12 @@
 #ifndef MAPPER_H
 #define MAPPER_H
-#include "types.h"
 #include <vector>
+
+#ifdef COMPILE_WINDOWS
+#include "../types.h"
+#else
+#include "types.h"
+#endif
 
 using namespace std;
 
