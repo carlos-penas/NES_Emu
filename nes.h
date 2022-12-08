@@ -29,6 +29,7 @@ private:
     //Screen rendering
 #ifdef RENDERSCREEN
     sf::RenderWindow window;
+    sf::VideoMode desktop;
     sf::Texture pixels_texture;
     sf::Sprite pixels_sprite;
     sf::Event event;

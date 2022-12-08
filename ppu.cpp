@@ -759,46 +759,107 @@ void PPU::spriteFetching()
             break;
         }
         case 5:
+        {
             //Load [Pattern Low Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
-            if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
+            int spriteRow = scanline - Secondary_OAM[spriteFetchingIndex][0];
+            //8x16 sprites
+            if(PPUCTRL.spriteSize)
             {
                 //Sprite flipped vertically
-                int size = 8;
-                if(PPUCTRL.spriteSize)
+                if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
                 {
-                    //8x16 sprites
-                    size = 16;
+                    if(spriteRow > 7)
+                    {
+                        shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead(((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | ((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) << 4) | (7 - (spriteRow & 0x7)));
+                    }
+                    else
+                    {
+                        shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead(((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | (((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) + 1) << 4) | (7 - (spriteRow & 0x7)));
+                    }
                 }
-                shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - scanline);
+                //Sprite NOT flipped
+                else
+                {
+                    if(spriteRow > 7)
+                    {
+                        shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead(((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | (((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) + 1) << 4) | (spriteRow & 0x7));
+                    }
+                    else
+                    {
+                        shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead(((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | ((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) << 4) | (spriteRow & 0x7));
+                    }
+                }
             }
+            //8x8 sprites
             else
             {
+                //Sprite flipped vertically
+                if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
+                {
+                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow));
+                }
                 //Sprite NOT flipped
-                shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline - Secondary_OAM[spriteFetchingIndex][0]);
+                else
+                {
+                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow);
+                }
             }
             break;
-
+        }
         case 7:
+        {
             //Load [Pattern High Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
-            if((Secondary_OAM[spriteFetchingIndex][2] & 0x80))
+            int spriteRow = scanline - Secondary_OAM[spriteFetchingIndex][0];
+            //8x16 sprites
+            if(PPUCTRL.spriteSize)
             {
                 //Sprite flipped vertically
-                int size = 8;
-                if(PPUCTRL.spriteSize)
+                if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
                 {
-                    //8x16 sprites
-                    size = 16;
+                    if(spriteRow > 7)
+                    {
+                        //Bottom Half
+                        shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | ((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) << 4) | (7 - (spriteRow & 0x7)))+ 8);
+                    }
+                    else
+                    {
+                        //Top Half
+                        shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | (((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) + 1) << 4) | (7 - (spriteRow & 0x7)))+ 8);
+                    }
                 }
-                shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + Secondary_OAM[spriteFetchingIndex][0] + (size-1) - scanline + (PTRN_SIZE / 2));
+                //Sprite NOT flipped
+                else
+                {
+                    if(spriteRow > 7)
+                    {
+                        //Bottom half
+                        shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | (((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) + 1) << 4) | (spriteRow & 0x7))+ 8);
+                    }
+                    else
+                    {
+                        //Top half
+                        shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((((Secondary_OAM[spriteFetchingIndex][1] & 0x1) << 12) | ((Secondary_OAM[spriteFetchingIndex][1] & 0xFE) << 4) | (spriteRow & 0x7))+ 8);
+                    }
+                }
             }
+            //8x8 sprites
             else
             {
+                //Sprite flipped vertically
+                if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
+                {
+                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow)) + 8);
+                }
                 //Sprite NOT flipped
-                shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) + Secondary_OAM[spriteFetchingIndex][1] * PTRN_SIZE + scanline - Secondary_OAM[spriteFetchingIndex][0] + (PTRN_SIZE / 2));
+                else
+                {
+                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow) + 8);
+                }
             }
 
             spriteFetchingIndex++;
             break;
+        }
         }
     }
 }

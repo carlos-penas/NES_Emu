@@ -27,7 +27,7 @@ NES::NES()
     //window.setIcon(icon.getSize().x,icon.getSize().y,icon.getPixelsPtr());
 
     //Center Screen
-    sf::VideoMode desktop = sf::VideoMode::getDesktopMode();
+    desktop = sf::VideoMode::getDesktopMode();
     window.setPosition(sf::Vector2i(desktop.width/2 - window.getSize().x/2,desktop.height/2 - window.getSize().y/2));
 #endif
     //Create pixel buffer with the appropriate size
@@ -181,11 +181,13 @@ void NES::run()
                 else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F1)
                 {
                     window.setSize(sf::Vector2u(PICTURE_WIDTH*2,PICTURE_HEIGHT*2));
+                    window.setPosition(sf::Vector2i(desktop.width/2 - window.getSize().x/2,desktop.height/2 - window.getSize().y/2));
                 }
                 //Resize the window to x3 the original NES size when pressing the F2 key
                 else if (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::F2)
                 {
                     window.setSize(sf::Vector2u(PICTURE_WIDTH*3,PICTURE_HEIGHT*3));
+                    window.setPosition(sf::Vector2i(desktop.width/2 - window.getSize().x/2,desktop.height/2 - window.getSize().y/2));
                 }
             }
         }
