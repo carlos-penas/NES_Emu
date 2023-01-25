@@ -6,13 +6,15 @@ NES::NES()
     systemCycles = 0;
     cycleCounter = 3;
     delayedFrames = 0;
-    event = sf::Event();
+
     bus = new Bus;
     cartridge = new Cartridge;
     ppu = new PPU;
     cpu = new CPU(bus);
 
 #ifdef RENDERSCREEN
+    event = sf::Event();
+
     //Load icon from png
     //sf::Image icon;
     //icon.loadFromFile("/home/carlos/programming/NES_Emulator/Documents/NES_Icon.png");
