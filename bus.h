@@ -27,7 +27,7 @@ private:
     PPU *ppu;
     Register8 controllers[2];
 
-    void pollControllerInput(int i);
+    void pollControllerInput();
     Byte readControllerData(int i);
 };
 
