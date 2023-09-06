@@ -1,6 +1,5 @@
 #include "mapper0.h"
 #include <stdio.h>
-#include "compilationSettings.h"
 
 #ifdef COMPILE_WINDOWS
 #include "../Exceptions/notmappedaddressexception.h"

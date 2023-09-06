@@ -3,7 +3,7 @@
 #include <exception>
 #include <cstring>
 #include <sstream>
-#include "compilationSettings.h"
+#include "../compilationSettings.h"
 
 #ifdef COMPILE_WINDOWS
 #include "../types.h"

@@ -4,6 +4,11 @@ int main(int argc,char* argv[])
 {
     string path = "";
 
+    setlocale(LC_ALL, "spanish");
+    printf("EMULADOR DE LA NES\n");
+    printf("\tpor Carlos Peñas (carlos.penas.n@gmail.com).\n\n");
+    printf("Repositorio del proyecto: https://github.com/carlos-penas/NES_Emu\n\n");
+
     if(argc == 1)
     {
         printf("Se debe especificar una ROM\n");

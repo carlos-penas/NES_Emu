@@ -151,11 +151,11 @@ void NES::run()
             pixels_texture.update(pixels);
             window.draw(pixels_sprite);
 
-            if(timer.getElapsedTime().asMicroseconds() > 16666)
+            /*if(timer.getElapsedTime().asMicroseconds() > 16666)
             {
                 delayedFrames++;
                 printf("ATENCION, SE ESTÁ RALENTIZANDO EL JUEGO\n");
-            }
+            }*/
             //printf("T = %lld\n", timer.nsecsElapsed());
 
             //Render screen every ~16666 us (for 60 fps)
