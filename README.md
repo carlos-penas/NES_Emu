@@ -8,9 +8,9 @@ The Audio Processing Unit (APU) is not implemented, so the emulator isn't capabl
 
 ## Screenshots
 
-![Screenshot 1](https://imgur.com/qJKEINp)
+![Screenshot 1](https://i.imgur.com/qJKEINp.png)
 
-![Screenshot 2](https://imgur.com/HYYGtbK)
+![Screenshot 2](https://imgur.com/HYYGtbK.png)
 
 
 ## Author
