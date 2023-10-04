@@ -196,6 +196,6 @@ void NES::run()
 #endif
     }
 
-    printf("Cycles executed: %ld\n",systemCycles);
+    printf("Cycles executed: %llu\n",systemCycles);
     //printf("Delayed frames: %ld\n", delayedFrames);
 }

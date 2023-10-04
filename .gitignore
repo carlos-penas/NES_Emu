@@ -54,3 +54,6 @@ build/
 bin/
 lib/
 
+#ROMs folder
+ROMs/
+

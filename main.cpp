@@ -12,7 +12,7 @@ int main(int argc,char* argv[])
 
     std::cout << "Bienvenido a " << programName << " v" << programVersion << std::endl;
     std::cout << "Autor: " << author << std::endl;
-    std::cout << "Descripción: " << description << std::endl;
+    std::cout << "Descripcion: " << description << std::endl;
     std::cout << "Repositorio en GitHub: " << githubURL << std::endl << std::endl;
 
 
