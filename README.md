@@ -48,6 +48,23 @@ To execute the emulator, just pass  the ROM (.nes file) as the first argument (i
 ### Alternative way (Windows only)
 If you don't want to use the console to execute the emulator, you can use the Windows file explorer and just drag the ROM file over the emulator executable.
 
+## Optional compilation configurations
+There are several arguments you can add to the  `cmake` command when configuring the project.
+
+### Screen Rendering
+If you don't want the emulator to generate any window nor render any frame (usually for debugging purposes) you can call cmake with the following argument:
+```bash
+  cmake -DRENDER_SCREEN=OFF ..
+``` 
+This argument will compile the emulator without the SFML library
+
+### CPU Log
+If you want the emulator to print a log with all the important CPU information (instruction name, cycles executed, value of internal registers...) after executing every instruction, you can call cmake with the following argument:
+```bash
+  cmake -DPRINT_LOG=ON ..
+``` 
+It is recommended to only activate this option when `RENDER_SCREEN=OFF`, because the emulator won't be able to perform correctly with both the screen rendering and the log.
+
 ## Author
 - [Carlos Peñas](https://github.com/carlos-penas)
 
