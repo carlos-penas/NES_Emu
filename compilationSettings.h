@@ -4,6 +4,4 @@
 //#define PRINTLOG
 #define RENDERSCREEN
 
-#define COMPILE_WINDOWS
-
 #endif // COMPILATIONSETTINGS_H

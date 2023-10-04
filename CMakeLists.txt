@@ -32,7 +32,9 @@ find_package(SFML 2 COMPONENTS graphics window system REQUIRED)
 target_link_libraries(NES_Emu PRIVATE sfml-graphics sfml-window sfml-system)
 
 #Copy DLLs if using Windows
-if(WIN32)
+if(WIN32 AND BUILD_SHARED_LIBS)
+
+
 	add_custom_command(TARGET NES_Emu POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${SFML_ROOT}/bin"

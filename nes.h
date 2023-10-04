@@ -6,11 +6,7 @@
 #include "compilationSettings.h"
 
 #ifdef RENDERSCREEN
-#ifdef COMPILE_WINDOWS
 #include "SFML/Graphics.hpp"
-#else
-#include "Graphics.hpp"
-#endif
 #endif
 
 class NES

@@ -3,11 +3,7 @@
 #include <vector>
 #include "../compilationSettings.h"
 
-#ifdef COMPILE_WINDOWS
 #include "../types.h"
-#else
-#include "types.h"
-#endif
 
 using namespace std;
 

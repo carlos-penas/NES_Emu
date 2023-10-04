@@ -3,13 +3,8 @@
 #include <exception>
 #include <cstring>
 #include <sstream>
-#include "../compilationSettings.h"
 
-#ifdef COMPILE_WINDOWS
 #include "../types.h"
-#else
-#include "types.h"
-#endif
 
 enum AccessType{
     ReadAttempt,
@@ -31,7 +26,7 @@ public:
         else
             ss << "Attempting to write to an invalid address: 0x" << hex << address;
         char * str = new char[60];
-#ifdef COMPILE_WINDOWS
+#ifdef _WIN32
         strcpy_s(str,ss.str().length(), ss.str().c_str());
 #else
         strcpy(str,ss.str().c_str());

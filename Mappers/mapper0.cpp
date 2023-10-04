@@ -1,13 +1,7 @@
 #include "mapper0.h"
 #include <stdio.h>
 
-#ifdef COMPILE_WINDOWS
 #include "../Exceptions/notmappedaddressexception.h"
-#endif
-#ifndef COMPILE_WINDOWS
-#include "Exceptions/notmappedaddressexception.h"
-#endif
-
 
 Mapper0::Mapper0(vector<Register8> PRG_ROM, uint16_t PRG_RAM_Size, vector<Register8> CHR_ROM)
     : Mapper(PRG_ROM,CHR_ROM)
