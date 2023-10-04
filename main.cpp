@@ -1,19 +1,15 @@
 #include "nes.h"
+#include "ProjectConfig.h"
 
 int main(int argc,char* argv[])
 {
     string path = "";
-
-    const string programName = "NES_Emu";
-    const string programVersion = "1.0";
     const string author = "Carlos Penas"; //(Carlos Peñas)
-    const string description = "Un emulador de la NES en C++ y la libreria SFML";
-    const string githubURL = "https://github.com/carlos-penas/NES_Emu";
 
-    std::cout << "Bienvenido a " << programName << " v" << programVersion << std::endl;
+    std::cout << "Bienvenido a " << PROJECT_NAME << " v" << PROJECT_VERSION_MAJOR << "." << PROJECT_VERSION_MINOR << std::endl;
     std::cout << "Autor: " << author << std::endl;
-    std::cout << "Descripcion: " << description << std::endl;
-    std::cout << "Repositorio en GitHub: " << githubURL << std::endl << std::endl;
+    std::cout << "Descripcion: " << PROJECT_DESCRIPTION << std::endl;
+    std::cout << "Repositorio en GitHub: " << GITHUB_URL << std::endl << std::endl;
 
 
     if(argc == 1)

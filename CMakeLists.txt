@@ -1,6 +1,9 @@
 #General project settings
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emu VERSION 1.0.0 DESCRIPTION "Emulador de la NES en C++" LANGUAGES CXX)
+project(NES_Emu VERSION 1.0 DESCRIPTION "Un emulador de la NES en C++ y la libreria SFML" LANGUAGES CXX HOMEPAGE_URL "https://github.com/carlos-penas/NES_Emu")
+
+#Copy information from input file the configuration header file
+configure_file(ProjectConfig.h.in ProjectConfig.h)
 
 #Add source files to the build
 add_executable(NES_Emu 
@@ -23,6 +26,7 @@ add_executable(NES_Emu
 target_include_directories(NES_Emu PRIVATE 
 				${CMAKE_CURRENT_SOURCE_DIR}/Exceptions
 				${CMAKE_CURRENT_SOURCE_DIR}/Mappers
+				${CMAKE_CURRENT_BINARY_DIR}
 				)
 
 #Find SFML library		
