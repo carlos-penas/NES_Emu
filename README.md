@@ -45,7 +45,7 @@ To execute the emulator, just pass  the ROM (.nes file) as the first argument (i
 ```bash
   ./NES_Emu <ROM_Name>.nes
 ```
-### Alternative way (Windows)
+### Alternative way (Windows only)
 If you don't want to use the console to execute the emulator, you can use the Windows file explorer and just drag the ROM file over the emulator executable.
 
 ## Author
