@@ -14,7 +14,7 @@ int main(int argc,char* argv[])
 
     if(argc == 1)
     {
-        printf("Se debe especificar una ROM\n");
+        printf("ERROR: Se debe especificar una ROM\n");
         return 0;
     }else
     {

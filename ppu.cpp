@@ -418,7 +418,7 @@ string PPU::stringPPUState()
 //Memory
 Byte PPU::memoryRead(Address address)
 {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
     Address realAddress = address;
 #endif
 
@@ -436,14 +436,14 @@ Byte PPU::memoryRead(Address address)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
             //printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 11) & 1][address & 0x3FF];
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
             //printf("Lectura [%04X] -->  Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x03FF);
 #endif
             return NameTables[(address >> 10) & 1][address & 0x3FF];
@@ -453,7 +453,7 @@ Byte PPU::memoryRead(Address address)
     //Pallette Indexes and their mirrors
     else if(address >= 0x3F00 && address <= 0x3FFF)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         //printf("Lectura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;
@@ -474,7 +474,7 @@ Byte PPU::memoryRead(Address address)
 
 void PPU::memoryWrite(Byte value, Address address)
 {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
     Address realAddress = address;
 #endif
 
@@ -491,14 +491,14 @@ void PPU::memoryWrite(Byte value, Address address)
     {
         if(cartridge->getMirroringType() == HorizontalMirroring)
         {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
             //printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 11) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 11) & 1][address & 0x3FF] = value;
         }
         else if(cartridge->getMirroringType() == VerticalMirroring)
         {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
             //printf("Escritura [%04X] --> Nametable[%d][%04X]\n", realAddress, (address >> 10) & 1, address & 0x3FF);
 #endif
             NameTables[(address >> 10) & 1][address & 0x3FF] = value;
@@ -508,7 +508,7 @@ void PPU::memoryWrite(Byte value, Address address)
     //Pallette Indexes and their mirrors
     else if(address >= 0x3F00 && address <= 0x3FFF)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         //printf("Escritura [%04X] --> Palette Index [%04X]\n", realAddress, address & 0x1F);
 #endif
         address = address & 0x1F;

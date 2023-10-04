@@ -12,7 +12,7 @@ NES::NES()
     ppu = new PPU;
     cpu = new CPU(bus);
 
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
     event = sf::Event();
 
     //Load icon from png
@@ -35,7 +35,7 @@ NES::NES()
     //Create pixel buffer with the appropriate size
     pixels = new Byte[PICTURE_WIDTH * PICTURE_HEIGHT * PIXEL_SIZE];
 
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
     //Create a texture with the same size as the window
     pixels_texture.create(PICTURE_WIDTH, PICTURE_HEIGHT);
 
@@ -94,17 +94,17 @@ void NES::run()
 
     systemCycles = 21;
 
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
     cpu->readyToPrint = false;
     string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
-    printf("%s%ld\n",state.data(),cpu->getCycles());
+    printf("%s%llu\n",state.data(),cpu->getCycles());
 #endif
 
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
     timer.restart();
     while(!cpu->HLT && window.isOpen())
 #endif
-#ifndef RENDERSCREEN
+#ifndef RENDER_SCREEN
     //while(!cpu->HLT && systemCycles < 1611539 * 3)
     while(!cpu->HLT && systemCycles < 1250 * 3)
     //while(!cpu->HLT && systemCycles < 3968225)
@@ -121,12 +121,12 @@ void NES::run()
         {
             cycleCounter = 3;
             cpu->executeCycle();
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
             if(cpu->readyToPrint)
             {
                 cpu->readyToPrint = false;
                 string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
-                printf("%s%ld\n",state.data(),cpu->getCycles());
+                printf("%s%llu\n",state.data(),cpu->getCycles());
             }
 #endif
         }
@@ -141,7 +141,7 @@ void NES::run()
         //Increase system cycles
         systemCycles++;
 
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
         //When the ppu reports that the frame is complete, the screen is refreshed
         if(ppu->frameComplete)
         {
@@ -196,6 +196,6 @@ void NES::run()
 #endif
     }
 
-    printf("Cycles executed: %llu\n",systemCycles);
-    //printf("Delayed frames: %ld\n", delayedFrames);
+    cout << "Cycles executed: " << systemCycles << endl;
+    //cout << "Delayed frames: " << delayedFrames << endl;
 }

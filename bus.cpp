@@ -2,8 +2,9 @@
 #include "stdio.h"
 #include <cstring>
 #include "compilationSettings.h"
-
-#include "SFML/Window.hpp"
+#ifdef RENDER_SCREEN
+    #include "SFML/Window.hpp"
+#endif
 
 Bus::Bus()
 {
@@ -47,7 +48,7 @@ void Bus::Write(Byte value, Address address)
     //PPU Registers
     else if (address >= 0x2000 && address <= 0x3FFF)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("Escritura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
 #endif
         ppu->cpuWrite(value, address & 0x2007);
@@ -56,7 +57,7 @@ void Bus::Write(Byte value, Address address)
     //APU I/O
     else if(address >= 0x4000 && address <= 0x4017)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("Escritura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         APU_IO[address & 0x001F] = value;
@@ -92,7 +93,7 @@ Byte Bus::Read(Address address)
     //PPU Registers
     else if (address >= 0x2000 && address <= 0x3FFF)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("Lectura [%04X] --> PPU_Register[%04X]\n", address, (address & 0x2007));
 #endif
         return ppu->cpuRead(address & 0x2007);
@@ -101,7 +102,7 @@ Byte Bus::Read(Address address)
     //APU I/O
     else if(address >= 0x4000 && address <= 0x4017)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("Lectura [%04X] --> APU_IO[%04X]\n", address, (address & 0x001F));
 #endif
         if(address >= 0x4016)
@@ -117,7 +118,7 @@ Byte Bus::Read(Address address)
     //APU Test
     else if(address >= 0x4018 && address <= 0x401F)
     {
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("Lectura [%04X] --> APU_Test[%04X]\n", address, (address & 0x0007));
 #endif
         return APU_Test[address  & 0x0007];
@@ -134,6 +135,7 @@ Byte Bus::Read(Address address)
 
 void Bus::pollControllerInput()
 {
+    #ifdef RENDER_SCREEN
     //Poll Controller 0 input
     if(sf::Keyboard::isKeyPressed(sf::Keyboard::D))
     {
@@ -265,6 +267,7 @@ void Bus::pollControllerInput()
     {
         controllers[1] &= 0xFE;
     }
+    #endif // RENDER_SCREEN
 }
 
 Byte Bus::readControllerData(int i)

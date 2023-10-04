@@ -5,7 +5,7 @@
 #include "ppu.h"
 #include "compilationSettings.h"
 
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
 #include "SFML/Graphics.hpp"
 #endif
 
@@ -23,7 +23,7 @@ private:
     Byte cycleCounter;
 
     //Screen rendering
-#ifdef RENDERSCREEN
+#ifdef RENDER_SCREEN
     sf::RenderWindow window;
     sf::VideoMode desktop;
     sf::Texture pixels_texture;

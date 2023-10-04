@@ -3261,7 +3261,7 @@ void CPU::NMICycle()
     if(NMI.cycles == 0)
     {
         NMI.isPending = false;
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("EJECUTO NMI\n");
 #endif
         executeNMI();
@@ -3286,7 +3286,7 @@ void CPU::resetCycle()
     if(reset.cycles == 0)
     {
         reset.isPending = false;
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("EJECUTO RESET\n");
 #endif
         executeReset();
@@ -3305,7 +3305,7 @@ void CPU::IRQCycle()
     if(IRQ.cycles == 0)
     {
         IRQ.isPending = false;
-#ifdef PRINTLOG
+#ifdef PRINT_LOG
         printf("EJECUTO IRQ\n");
 #endif
         executeIRQ();
