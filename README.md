@@ -56,7 +56,7 @@ If you don't want the emulator to generate any window nor render any frame (usua
 ```bash
   cmake -DRENDER_SCREEN=OFF ..
 ``` 
-This argument will compile the emulator without the SFML library
+This argument will compile the emulator **without the SFML library**
 
 ### CPU Log
 If you want the emulator to print a log with all the important CPU information (instruction name, cycles executed, value of internal registers...) after executing every instruction, you can call cmake with the following argument:
