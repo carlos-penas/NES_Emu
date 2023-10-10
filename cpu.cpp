@@ -2946,19 +2946,19 @@ CPUInstruction CPU::decodeInstruction()
 }
 
 
-string CPU::stringCPUState()
+std::string CPU::stringCPUState()
 {
-    string cpuState;
-    string sPC = Utils::hexString16(pc);
-    string sOpCode = Utils::hexString(currentInstruction.OpCode);
-    string sData1 = Utils::hexString(currentInstruction.Byte2);
-    string sData2 = Utils::hexString(currentInstruction.Byte3);
-    string sA = Utils::hexString(A);
-    string sX = Utils::hexString(X);
-    string sY = Utils::hexString(Y);
-    string sP = Utils::hexString(P);
-    string sSP = Utils::hexString(sp);
-    string sName = formatName(currentInstruction.Name);
+    std::string cpuState;
+    std::string sPC = Utils::hexString16(pc);
+    std::string sOpCode = Utils::hexString(currentInstruction.OpCode);
+    std::string sData1 = Utils::hexString(currentInstruction.Byte2);
+    std::string sData2 = Utils::hexString(currentInstruction.Byte3);
+    std::string sA = Utils::hexString(A);
+    std::string sX = Utils::hexString(X);
+    std::string sY = Utils::hexString(Y);
+    std::string sP = Utils::hexString(P);
+    std::string sSP = Utils::hexString(sp);
+    std::string sName = formatName(currentInstruction.Name);
 
     if (currentInstruction.Bytes == 1)
     {
@@ -2981,22 +2981,22 @@ void CPU::activateNMI()
     NMI.activate(7);
 }
 
-string CPU::formatName(string instructionName)
+std::string CPU::formatName(std::string instructionName)
 {
-    stringstream s;
+    std::stringstream s;
     if(currentInstruction.Bytes == 1)
     {
-        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1)) << "";
+        s << std::setfill(' ') << std::setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1)) << "";
         return "[" + instructionName + "]" + s.str();
     }
     if(currentInstruction.Bytes == 2)
     {
-        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
+        s << std::setfill(' ') << std::setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
         return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Byte2) + "]" + s.str();
     }
     else
     {
-        s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
+        s << std::setfill(' ') << std::setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
         return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Byte3) + Utils::hexString(currentInstruction.Byte2) + "]" + s.str();
     }
 }

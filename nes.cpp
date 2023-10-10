@@ -69,7 +69,7 @@ NES::~NES()
     delete cpu;
 }
 
-bool NES::loadGame(string path)
+bool NES::loadGame(std::string path)
 {
     if(cartridge->loadROM(path))
     {
@@ -197,12 +197,12 @@ void NES::run()
 #endif
     }
 
-    cout << "Ciclos ejecutados: " << systemCycles << endl;
-    //cout << "Delayed frames: " << delayedFrames << endl;
+    std::cout << "Ciclos ejecutados: " << systemCycles << std::endl;
+    //std::cout << "Delayed frames: " << delayedFrames << std::endl;
 }
 
 void NES::printState()
 {
-    string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
+    std::string state = cpu->stringCPUState() + " " + ppu->stringPPUState() + " CYC: ";
     printf("%s%llu\n",state.data(),cpu->getCycles());
 }

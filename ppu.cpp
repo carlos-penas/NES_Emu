@@ -405,11 +405,11 @@ void PPU::cpuWrite(Byte value, Address address)
     }
 }
 
-string PPU::stringPPUState()
+std::string PPU::stringPPUState()
 {
-    stringstream s1,s2;
-    s1 << setfill(' ') << setw(3) << cycle;
-    s2 << setfill(' ') << setw(3) << scanline;
+    std::stringstream s1,s2;
+    s1 << std::setfill(' ') << std::setw(3) << cycle;
+    s2 << std::setfill(' ') << std::setw(3) << scanline;
 
     return "PPU " + s1.str() + "," + s2.str();
 }

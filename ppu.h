@@ -38,7 +38,7 @@ public:
     Byte cpuRead(Address address);
     void cpuWrite(Byte value, Address address);
 
-    string stringPPUState();
+    std::string stringPPUState();
 
     bool NMI;
     bool frameComplete;

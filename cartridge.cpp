@@ -16,9 +16,9 @@ Cartridge::~Cartridge()
     mapper = NULL;
 }
 
-bool Cartridge::loadROM(string path)
+bool Cartridge::loadROM(std::string path)
 {
-    ifstream file(path, ios_base::in | ios_base::binary);
+    std::ifstream file(path, std::ios_base::in | std::ios_base::binary);
     NES_Header header;
 
     uint16_t PRG_RAM_Size = 0;
@@ -67,8 +67,8 @@ bool Cartridge::loadROM(string path)
         return false;
 
 
-    vector<Register8> PRG_ROM;
-    vector<Register8> CHR_ROM;
+    std::vector<Register8> PRG_ROM;
+    std::vector<Register8> CHR_ROM;
 
     PRG_ROM.resize(PRG_ROM_Size);
     file.read((char*)PRG_ROM.data(),PRG_ROM_Size);
@@ -80,9 +80,9 @@ bool Cartridge::loadROM(string path)
     printf("Informacion de la ROM:\n");
     printf("\tMapper %d\n",mapperId);
     printf("\tCabecera version %d\n",headerType);
-    cout << "\tROM: " << PRG_ROM_Size << " bytes" << endl;
-    cout << "\tRAM: " << PRG_RAM_Size << " bytes" << endl;
-    cout << "\tCHR: " << CHR_ROM_Size << " bytes" << endl;
+    std::cout << "\tROM: " << PRG_ROM_Size << " bytes" << std::endl;
+    std::cout << "\tRAM: " << PRG_RAM_Size << " bytes" << std::endl;
+    std::cout << "\tCHR: " << CHR_ROM_Size << " bytes" << std::endl;
 
     if(mapperId == 0)
     {
@@ -115,7 +115,7 @@ bool Cartridge::loadROM(string path)
         printf("\tMirroring horizontal\n");
     }
 
-    cout << endl;
+    std::cout << std::endl;
     return true;
 }
 

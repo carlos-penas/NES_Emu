@@ -5,7 +5,7 @@
 class Mapper2 : public Mapper
 {
 public:
-    Mapper2(vector<Register8> PRG_ROM, vector<Register8> CHR_ROM);
+    Mapper2(std::vector<Register8> PRG_ROM, std::vector<Register8> CHR_ROM);
 
     void CPU_Write(Byte value, Address address) override;
     Byte CPU_Read(Address address) override;

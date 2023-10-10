@@ -5,8 +5,6 @@
 #include <vector>
 #include "Mappers/mapper.h"
 
-using namespace std;
-
 enum HeaderType{
     v1 = 1,
     v2
@@ -57,7 +55,7 @@ class Cartridge
 public:
     Cartridge();
     ~Cartridge();
-    bool loadROM(string path);
+    bool loadROM(std::string path);
     void CPU_Write(Byte value, Address address);
     Byte CPU_Read(Address address);
     Byte PPU_Read(Address address);

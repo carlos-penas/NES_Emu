@@ -4,13 +4,11 @@
 
 #include "../types.h"
 
-using namespace std;
-
 class Mapper
 {
 public:
-    Mapper(vector<Register8> PRG_ROM);
-    Mapper(vector<Register8> PRG_ROM, vector<Register8> CHR_ROM);
+    Mapper(std::vector<Register8> PRG_ROM);
+    Mapper(std::vector<Register8> PRG_ROM, std::vector<Register8> CHR_ROM);
 
     virtual ~Mapper() = default;
 
@@ -20,8 +18,8 @@ public:
     virtual Byte PPU_Read(Address address) = 0;
 
 protected:
-    vector<Register8> PRG_ROM;
-    vector<Register8> CHR_ROM;
+    std::vector<Register8> PRG_ROM;
+    std::vector<Register8> CHR_ROM;
 };
 
 #endif // MAPPER_H

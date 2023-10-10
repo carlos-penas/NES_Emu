@@ -1,6 +1,6 @@
 #include "mapper2.h"
 
-Mapper2::Mapper2(vector<Register8> PRG_ROM, vector<Register8> CHR_ROM)
+Mapper2::Mapper2(std::vector<Register8> PRG_ROM, std::vector<Register8> CHR_ROM)
     : Mapper(PRG_ROM,CHR_ROM)
 {
 

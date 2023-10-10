@@ -3,8 +3,8 @@
 
 int main(int argc,char* argv[])
 {
-    string path = "";
-    const string author = "Carlos Penas"; //(Carlos Peñas)
+    std::string path = "";
+    const std::string author = "Carlos Penas"; //(Carlos Peñas)
 
     std::cout << "Bienvenido a " << PROJECT_NAME << " v" << PROJECT_VERSION_MAJOR << "." << PROJECT_VERSION_MINOR << std::endl;
     std::cout << PROJECT_DESCRIPTION << std::endl;

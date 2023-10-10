@@ -59,7 +59,7 @@ private:
 
     CPUInstruction decodeInstruction();
 
-    string formatName(string instructionName);
+    std::string formatName(std::string instructionName);
 
     //Addressing modes
     Address zeroPageAddress(Byte ADL);

@@ -13,7 +13,7 @@ class NES
 public:
     NES();
     ~NES();
-    bool loadGame(string path);
+    bool loadGame(std::string path);
     void run();
     void printState();
 
