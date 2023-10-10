@@ -78,11 +78,11 @@ bool Cartridge::loadROM(string path)
     file.close();
 
     printf("Informacion de la ROM:\n");
-    printf("\tMapper number: %d\n",mapperId);
-    printf("\tHeader version %d\n",headerType);
-    cout << "\tROM Size: " << PRG_ROM_Size << endl;
-    cout << "\tRAM Size: " << PRG_RAM_Size << endl;
-    cout << "\tCHR Size: " << CHR_ROM_Size << endl;
+    printf("\tMapper %d\n",mapperId);
+    printf("\tCabecera version %d\n",headerType);
+    cout << "\tROM: " << PRG_ROM_Size << " bytes" << endl;
+    cout << "\tRAM: " << PRG_RAM_Size << " bytes" << endl;
+    cout << "\tCHR: " << CHR_ROM_Size << " bytes" << endl;
 
     if(mapperId == 0)
     {
@@ -107,13 +107,15 @@ bool Cartridge::loadROM(string path)
     if(header.v1.Flags6 & 0x01)
     {
         nametableMirroring = VerticalMirroring;
-        printf("\tVertical mirroring\n");
+        printf("\tMirroring vertical\n");
     }
     else
     {
         nametableMirroring = HorizontalMirroring;
-        printf("\tHorizontal mirroring\n");
+        printf("\tMirroring horizontal\n");
     }
+
+    cout << endl;
     return true;
 }
 

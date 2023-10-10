@@ -1,15 +1,14 @@
 #include "ppu.h"
 #include "constants.h"
 #include <cstring>
-#include "compilationSettings.h"
 
 PPU::PPU()
 {
-    PPUSTATUS.VBlank = 0;
-    //PPUSTATUS.value =0xA0;
-    PPUSTATUS.value =0x00;
-    PPUCTRL.value = 0;
-    OAMADDR = 0;
+    statusRegister.VBlank = 0;
+    //statusRegister.value =0xA0;
+    statusRegister.value =0x00;
+    controlRegister.value = 0;
+    OAMAddressRegister = 0;
 
     currentSpriteNumber = 0;
     spriteEvaluationIndex = 0;
@@ -22,7 +21,7 @@ PPU::PPU()
 
     patternIndex = 0;
 
-    pixelOffsetX = 0;
+    XRegister = 0;
 
     patternLSB = 0;
 
@@ -70,10 +69,10 @@ void PPU::executeCycle()
         }
 
         //If we are on a part of the screen that is not blank (1-256), we load the pixel into the buffer
-        if(cycle <= 256 && cycle >=1 && PPUMASK.renderBackground)
+        if(cycle <= 256 && cycle >=1 && maskRegister.renderBackground)
         {
             //If there are no sprites on the scanline, a background pixel is loaded
-            if(currentSpriteNumber == 0 || scanline == 0 || !PPUMASK.renderSprites)
+            if(currentSpriteNumber == 0 || scanline == 0 || !maskRegister.renderSprites)
             {
                 loadBackgroundPixel();
             }
@@ -112,7 +111,7 @@ void PPU::executeCycle()
                     i++;
                 }
 
-                Byte offset = 15 - pixelOffsetX;
+                Byte offset = 15 - XRegister;
                 backgroundColorId = getBackgroundColor(offset);
 
                 Byte colorIndex = 0;
@@ -140,13 +139,13 @@ void PPU::executeCycle()
                     //Sprite Zero Hit Flag is set when an opaque background pixel overlaps an opaque sprite pixel
                     if(spriteColorId && backgroundColorId)
                     {
-                        PPUSTATUS.spriteZeroHit = 1;
+                        statusRegister.spriteZeroHit = 1;
                     }
                 }
             }
 
             //During the last 64 cycles of the visible scanline, the sprite evaluation for the next scanline is performed
-            if(cycle >= 193 && PPUMASK.renderSprites)
+            if(cycle >= 193 && maskRegister.renderSprites)
             {
                 spriteEvaluation();
             }
@@ -179,7 +178,7 @@ void PPU::executeCycle()
         //During cycles (259-320), the sprite fetching sequence is performed
         if(cycle >= 259 && cycle <= 320)
         {
-            if(PPUMASK.renderSprites)
+            if(maskRegister.renderSprites)
                 spriteFetching();
         }
     }
@@ -189,9 +188,9 @@ void PPU::executeCycle()
         //At the start of the pre-render scanline, the Vertical Blank flag is reset. Sprite Zero Hit and Sprite Overflow flags are cleared too.
         if(cycle == 1)
         {
-            PPUSTATUS.VBlank = 0;
-            PPUSTATUS.spriteZeroHit = 0;
-            PPUSTATUS.spriteOverflow = 0;
+            statusRegister.VBlank = 0;
+            statusRegister.spriteZeroHit = 0;
+            statusRegister.spriteOverflow = 0;
         }
 
         //During the last cycles of the pre-render scanline, the background registers are shifted
@@ -228,8 +227,8 @@ void PPU::executeCycle()
     //From scanline 241 onwards, the Vertical Blank flag is set
     if(cycle == 1 && scanline == 241)
     {
-        PPUSTATUS.VBlank = 1;
-        if(PPUCTRL.generateNMI)
+        statusRegister.VBlank = 1;
+        if(controlRegister.generateNMI)
         {
             NMI = true;
         }
@@ -278,9 +277,9 @@ Byte PPU::cpuRead(Address address)
     }
     case RegAddress::PPUSTATUS:
     {
-        Byte result = (PPUSTATUS.value & 0xE0) | (internalBuffer & 0x1F);
-        PPUSTATUS.VBlank = 0;
-        addressLatch = 0;
+        Byte result = (statusRegister.value & 0xE0) | (internalBuffer & 0x1F);
+        statusRegister.VBlank = 0;
+        latch = 0;
         return result;
     }
     case RegAddress::OAMADDR:
@@ -289,7 +288,7 @@ Byte PPU::cpuRead(Address address)
     }
     case RegAddress::OAMDATA:
     {
-        return OAM[0][OAMADDR];
+        return OAM[0][OAMAddressRegister];
         break;
     }
     case RegAddress::PPUSCROLL:
@@ -303,11 +302,11 @@ Byte PPU::cpuRead(Address address)
     case RegAddress::PPUDATA:
     {
         //The data is read from the ppu memory map
-        Byte readData = memoryRead(VRAMAdress.value);
+        Byte readData = memoryRead(VRegister.value);
         Byte result;
 
         //If the address is within the palette range, we return the read value directly. Otherwise, we return the value of the previous read stored on the internal buffer.
-        if((VRAMAdress.value & 0x3FFF) >= 0x3F00)
+        if((VRegister.value & 0x3FFF) >= 0x3F00)
             result = readData;
         else
             result = internalBuffer;
@@ -316,10 +315,10 @@ Byte PPU::cpuRead(Address address)
         internalBuffer = readData;
 
         //The current VRAM address is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
-        if(PPUCTRL.VRAMincrement)
-            VRAMAdress.value += 32;
+        if(controlRegister.VRAMincrement)
+            VRegister.value += 32;
         else
-            VRAMAdress.value++;
+            VRegister.value++;
 
         return result;
     }
@@ -333,14 +332,14 @@ void PPU::cpuWrite(Byte value, Address address)
     switch (address) {
     case RegAddress::PPUCTRL:
     {
-        PPUCTRL.value = value;
-        tempVRAMAdress.nametableX = PPUCTRL.nametableX;
-        tempVRAMAdress.nametableY = PPUCTRL.nametableY;
+        controlRegister.value = value;
+        TRegister.nametableX = controlRegister.nametableX;
+        TRegister.nametableY = controlRegister.nametableY;
         break;
     }
     case RegAddress::PPUMASK:
     {
-        PPUMASK.value = value;
+        maskRegister.value = value;
         break;
     }
     case RegAddress::PPUSTATUS:
@@ -349,56 +348,56 @@ void PPU::cpuWrite(Byte value, Address address)
     }
     case RegAddress::OAMADDR:
     {
-        OAMADDR = value;
+        OAMAddressRegister = value;
         break;
     }
     case RegAddress::OAMDATA:
     {
-        OAM[0][OAMADDR] = value;
-        OAMADDR++;
+        OAM[0][OAMAddressRegister] = value;
+        OAMAddressRegister++;
         break;
     }
     case RegAddress::PPUSCROLL:
     {
-        if(addressLatch == 0)
+        if(latch == 0)
         {
-            tempVRAMAdress.tileOffsetX = value >> 3;
-            pixelOffsetX = value & 0x7;
-            addressLatch = 1;
+            TRegister.tileOffsetX = value >> 3;
+            XRegister = value & 0x7;
+            latch = 1;
         }
-        else //if(addressLatch == 1)
+        else //if(latch == 1)
         {
-            tempVRAMAdress.pixelOffsetY = value & 0x7;
-            tempVRAMAdress.tileOffsetY = value >> 3;
-            addressLatch = 0;
+            TRegister.pixelOffsetY = value & 0x7;
+            TRegister.tileOffsetY = value >> 3;
+            latch = 0;
         }
         break;
     }
     case RegAddress::PPUADDR:
     {
-        if(addressLatch == 0)
+        if(latch == 0)
         {
-            tempVRAMAdress.HByte = value & 0x3F;
-            addressLatch = 1;
+            TRegister.HByte = value & 0x3F;
+            latch = 1;
         }
-        else //if(addressLatch == 1)
+        else //if(latch == 1)
         {
-            tempVRAMAdress.LByte = value;
-            VRAMAdress.value = tempVRAMAdress.value;
-            addressLatch = 0;
+            TRegister.LByte = value;
+            VRegister.value = TRegister.value;
+            latch = 0;
         }
         break;
     }
     case RegAddress::PPUDATA:
     {
         //Write the value to the current VRAM Address
-        memoryWrite(value,VRAMAdress.value);
+        memoryWrite(value,VRegister.value);
 
         //The current VRAM address is incremented by the amount specified in bit 2 of PPUCTRL ('0' --> increment by 1, '1' --> increment by 32)
-        if(PPUCTRL.VRAMincrement)
-            VRAMAdress.value += 32;
+        if(controlRegister.VRAMincrement)
+            VRegister.value += 32;
         else
-            VRAMAdress.value++;
+            VRegister.value++;
         break;
     }
     default:
@@ -458,15 +457,15 @@ Byte PPU::memoryRead(Address address)
 #endif
         address = address & 0x1F;
         if(address == 0x10)
-            return PaletteRAMIndexes[0x00];
+            return VRAMPalettes[0x00];
         else if(address == 0x14)
-            return PaletteRAMIndexes[0x04];
+            return VRAMPalettes[0x04];
         else if(address == 0x18)
-            return PaletteRAMIndexes[0x08];
+            return VRAMPalettes[0x08];
         else if(address == 0x1C)
-            return PaletteRAMIndexes[0x0C];
+            return VRAMPalettes[0x0C];
         else
-            return PaletteRAMIndexes[address];
+            return VRAMPalettes[address];
     }
 
     return 0x00;
@@ -513,54 +512,54 @@ void PPU::memoryWrite(Byte value, Address address)
 #endif
         address = address & 0x1F;
         if(address == 0x10)
-            PaletteRAMIndexes[0x00] = value;
+            VRAMPalettes[0x00] = value;
         else if(address == 0x14)
-            PaletteRAMIndexes[0x04] = value;
+            VRAMPalettes[0x04] = value;
         else if(address == 0x18)
-            PaletteRAMIndexes[0x08] = value;
+            VRAMPalettes[0x08] = value;
         else if(address == 0x1C)
-            PaletteRAMIndexes[0x0C] = value;
+            VRAMPalettes[0x0C] = value;
         else
-            PaletteRAMIndexes[address] = value;
+            VRAMPalettes[address] = value;
     }
 }
 
 //Scrolling
 void PPU::incrementVRAM_AddressX()
 {
-    if(VRAMAdress.tileOffsetX == 31)
+    if(VRegister.tileOffsetX == 31)
     {
-        VRAMAdress.tileOffsetX = 0;
-        VRAMAdress.nametableX = ~VRAMAdress.nametableX;
+        VRegister.tileOffsetX = 0;
+        VRegister.nametableX = ~VRegister.nametableX;
     }
     else
     {
-        VRAMAdress.tileOffsetX++;
+        VRegister.tileOffsetX++;
     }
 }
 
 void PPU::incrementVRAM_AddressY()
 {
-    if(VRAMAdress.pixelOffsetY < 7)
+    if(VRegister.pixelOffsetY < 7)
     {
-        VRAMAdress.pixelOffsetY++;
+        VRegister.pixelOffsetY++;
     }
     else
     {
-        VRAMAdress.pixelOffsetY = 0;
-        if(VRAMAdress.tileOffsetY == 29)
+        VRegister.pixelOffsetY = 0;
+        if(VRegister.tileOffsetY == 29)
         {
-            VRAMAdress.tileOffsetY = 0;
-            VRAMAdress.nametableY = ~VRAMAdress.nametableY;
+            VRegister.tileOffsetY = 0;
+            VRegister.nametableY = ~VRegister.nametableY;
         }
-        else if(VRAMAdress.tileOffsetY == 31)
+        else if(VRegister.tileOffsetY == 31)
         {
-            VRAMAdress.tileOffsetY = 0;
+            VRegister.tileOffsetY = 0;
             //No nametable switch
         }
         else
         {
-            VRAMAdress.tileOffsetY++;
+            VRegister.tileOffsetY++;
         }
 
     }
@@ -568,21 +567,21 @@ void PPU::incrementVRAM_AddressY()
 
 void PPU::restoreVRAM_AddressX()
 {
-    VRAMAdress.tileOffsetX = tempVRAMAdress.tileOffsetX;
-    VRAMAdress.nametableX = tempVRAMAdress.nametableX;
+    VRegister.tileOffsetX = TRegister.tileOffsetX;
+    VRegister.nametableX = TRegister.nametableX;
 }
 
 void PPU::restoreVRAM_AddressY()
 {
-    VRAMAdress.tileOffsetY = tempVRAMAdress.tileOffsetY;
-    VRAMAdress.nametableY = tempVRAMAdress.nametableY;
-    VRAMAdress.pixelOffsetY = tempVRAMAdress.pixelOffsetY;
+    VRegister.tileOffsetY = TRegister.tileOffsetY;
+    VRegister.nametableY = TRegister.nametableY;
+    VRegister.pixelOffsetY = TRegister.pixelOffsetY;
 }
 
 //Render
 void PPU::loadPixel(Byte colorIndex)
 {
-    memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&NESPallette[colorIndex][0],PIXEL_SIZE);
+    memcpy(&pixels[(scanline * PICTURE_WIDTH + cycle-1) * PIXEL_SIZE],&systemPallette[colorIndex][0],PIXEL_SIZE);
 }
 
 Byte PPU::getNESPaletteColor(int paletteIndex, Byte colorOffset, bool spritePalette)
@@ -616,29 +615,29 @@ void PPU::backgroundFetching()
     {
     case 1:
         //Load pattern index from Nametable
-        patternIndex = memoryRead(0x2000 | (VRAMAdress.value & 0x0FFF));
+        patternIndex = memoryRead(0x2000 | (VRegister.value & 0x0FFF));
         break;
 
     case 3:
         //Load byte from Attribute table
-        tileAttribute = memoryRead(0x23C0 | (VRAMAdress.value & 0xC00) | ((VRAMAdress.tileOffsetY >> 2) << 3) | (VRAMAdress.tileOffsetX >> 2));
+        attributeByte = memoryRead(0x23C0 | (VRegister.value & 0xC00) | ((VRegister.tileOffsetY >> 2) << 3) | (VRegister.tileOffsetX >> 2));
 
         //Only keep the information for the quadrant that the current pixel belongs to
-        if(VRAMAdress.tileOffsetY & 0x02)
-            tileAttribute >>= 4;
-        if(VRAMAdress.tileOffsetX & 0x02)
-            tileAttribute >>= 2;
-        tileAttribute &= 0x03;
+        if(VRegister.tileOffsetY & 0x02)
+            attributeByte >>= 4;
+        if(VRegister.tileOffsetX & 0x02)
+            attributeByte >>= 2;
+        attributeByte &= 0x03;
         break;
 
     case 5:
         //Load pattern low byte from Pattern Table
-        patternLSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY);
+        patternLSB = memoryRead((controlRegister.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRegister.pixelOffsetY);
         break;
 
     case 7:
         //Load pattern high byte from Pattern Table
-        patternMSB = memoryRead((PPUCTRL.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRAMAdress.pixelOffsetY + (PTRN_SIZE / 2));
+        patternMSB = memoryRead((controlRegister.backgroundAddress << 12) + patternIndex * PTRN_SIZE + VRegister.pixelOffsetY + (PTRN_SIZE / 2));
 
         if(renderEnabled())
         {
@@ -661,12 +660,12 @@ void PPU::loadBackgroundShiftRegisters()
     shft_PatternMSB.value |= patternMSB;
 
     //Load the (same) palette index on the Low Byte of the shift registers
-    if(tileAttribute & 0b01)
+    if(attributeByte & 0b01)
         shft_PaletteLow.value |= 0xFF;
     else
         shft_PaletteLow.value |= 0x00;
 
-    if(tileAttribute & 0b10)
+    if(attributeByte & 0b10)
         shft_PaletteHigh.value |= 0xFF;
     else
         shft_PaletteHigh.value |= 0x00;
@@ -690,7 +689,7 @@ Byte PPU::getBackgroundColor(Byte offset)
 
 void PPU::loadBackgroundPixel()
 {
-    Byte offset = 15 - pixelOffsetX;
+    Byte offset = 15 - XRegister;
 
     backgroundPaletteIndex = getBackgroundPalette(offset);
     backgroundColorId = getBackgroundColor(offset);
@@ -701,7 +700,7 @@ void PPU::loadBackgroundPixel()
 
 void PPU::shiftBackgroundRegisters()
 {
-    if(PPUMASK.renderBackground)
+    if(maskRegister.renderBackground)
     {
         shft_PatternLSB.shiftLeft();
         shft_PatternMSB.shiftLeft();
@@ -716,7 +715,7 @@ void PPU::spriteEvaluation()
     if(nextScanlineSpriteNumber < 9 )
     {
         //Check the sprite Y coordinate to see if the scanline is in the range of the sprite
-        if((scanline) >= OAM[spriteEvaluationIndex][0] && (scanline) <= (OAM[spriteEvaluationIndex][0] + 7 + 8* PPUCTRL.spriteSize))
+        if((scanline) >= OAM[spriteEvaluationIndex][0] && (scanline) <= (OAM[spriteEvaluationIndex][0] + 7 + 8* controlRegister.spriteSize))
         {
             if(nextScanlineSpriteNumber < 8)
             {
@@ -735,7 +734,7 @@ void PPU::spriteEvaluation()
             }
             else
             {
-                PPUSTATUS.spriteOverflow = 1;
+                statusRegister.spriteOverflow = 1;
             }
         }
         spriteEvaluationIndex++;
@@ -763,7 +762,7 @@ void PPU::spriteFetching()
             //Load [Pattern Low Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
             int spriteRow = scanline - Secondary_OAM[spriteFetchingIndex][0];
             //8x16 sprites
-            if(PPUCTRL.spriteSize)
+            if(controlRegister.spriteSize)
             {
                 //Sprite flipped vertically
                 if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
@@ -796,12 +795,12 @@ void PPU::spriteFetching()
                 //Sprite flipped vertically
                 if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
                 {
-                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow));
+                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((controlRegister.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow));
                 }
                 //Sprite NOT flipped
                 else
                 {
-                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow);
+                    shft_SpritePatternLSB[spriteFetchingIndex].value = memoryRead((controlRegister.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow);
                 }
             }
             break;
@@ -811,7 +810,7 @@ void PPU::spriteFetching()
             //Load [Pattern High Byte] of the current sprite from Pattern Table using the pattern index from the secondary OAM
             int spriteRow = scanline - Secondary_OAM[spriteFetchingIndex][0];
             //8x16 sprites
-            if(PPUCTRL.spriteSize)
+            if(controlRegister.spriteSize)
             {
                 //Sprite flipped vertically
                 if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
@@ -848,12 +847,12 @@ void PPU::spriteFetching()
                 //Sprite flipped vertically
                 if(Secondary_OAM[spriteFetchingIndex][2] & 0x80)
                 {
-                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow)) + 8);
+                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((controlRegister.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) | (7 - spriteRow)) + 8);
                 }
                 //Sprite NOT flipped
                 else
                 {
-                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((PPUCTRL.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow) + 8);
+                    shft_SpritePatternMSB[spriteFetchingIndex].value = memoryRead(((controlRegister.spriteAdress << 12) | (Secondary_OAM[spriteFetchingIndex][1] << 4) |  spriteRow) + 8);
                 }
             }
 

@@ -7,14 +7,14 @@ int main(int argc,char* argv[])
     const string author = "Carlos Penas"; //(Carlos Peñas)
 
     std::cout << "Bienvenido a " << PROJECT_NAME << " v" << PROJECT_VERSION_MAJOR << "." << PROJECT_VERSION_MINOR << std::endl;
+    std::cout << PROJECT_DESCRIPTION << std::endl;
     std::cout << "Autor: " << author << std::endl;
-    std::cout << "Descripcion: " << PROJECT_DESCRIPTION << std::endl;
     std::cout << "Repositorio en GitHub: " << GITHUB_URL << std::endl << std::endl;
 
 
     if(argc == 1)
     {
-        printf("ERROR: Se debe especificar una ROM\n");
+        std::cout << "ERROR: Se debe especificar una ROM" << std::endl;
         return 0;
     }else
     {
@@ -26,11 +26,11 @@ int main(int argc,char* argv[])
     if(nes.loadGame(path))
     {
         nes.run();
-        printf("\nHalting the system...\n\n");
+        std::cout << "Deteniendo el sistema..." << std::endl << std::endl;
     }
     else
     {
-        printf("Error al cargar la ROM\n");
+        std::cout << "Error al cargar la ROM" << std::endl << std::endl;
     }
 
     return 0;

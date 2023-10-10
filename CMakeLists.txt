@@ -1,6 +1,6 @@
 #General project settings
 cmake_minimum_required(VERSION 3.16)
-project(NES_Emu VERSION 1.1 DESCRIPTION "Un emulador de la NES en C++ y la libreria SFML" LANGUAGES CXX HOMEPAGE_URL "https://github.com/carlos-penas/NES_Emu")
+project(NES_Emu VERSION 1.1 DESCRIPTION "Un emulador de la NES en C++ y la libreria SFML." LANGUAGES CXX HOMEPAGE_URL "https://github.com/carlos-penas/NES_Emu")
 
 #Copy information from input file into the configuration header file
 configure_file(ProjectConfig.h.in ProjectConfig.h)

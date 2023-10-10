@@ -47,7 +47,7 @@ private:
     //Memory map (16KB)
     Cartridge * cartridge;                  //   8 KB
     Register8 NameTables[2][0x400];         //   2 NameTables of 1KB each
-    Register8 PaletteRAMIndexes[0x20];      //  32 Bytes
+    Register8 VRAMPalettes[0x20];      //  32 Bytes
 
     //Internal memory
     Register8 OAM[64][4];                   // 256 Bytes
@@ -65,22 +65,21 @@ private:
     bool spriteZeroLoaded;
     bool spriteZeroPrepared;
 
-    //Registers
-    ControlRegister PPUCTRL;
-    MaskRegister PPUMASK;
-    StatusRegister PPUSTATUS;
-    Register8 OAMADDR;
-    Register8 OAMDATA;
+    //PPU Registers
+    ControlRegister controlRegister;
+    StatusRegister statusRegister;
+    MaskRegister maskRegister;
+    Register8 OAMAddressRegister;
 
     //Internal registers operated by PPUADDR and PPUSCROLL
-    AddressRegister VRAMAdress;     //(15 bits) --> [v]: Current VRAM address
-    AddressRegister tempVRAMAdress; //(15 bits) --> [t]: Temporary VRAM address. Address of the first tile (top left) that appears on the screen
-    Register8 pixelOffsetX;         //(3 bits)  --> [x]: Fine X scroll
-    Byte addressLatch;              //(1 bit)   --> [w]: Address latch shared by PPUADDR and PPUSCROLL (Conmutador)
+    AddressRegister VRegister;  //(15 bits) --> [v]: Current VRAM address
+    AddressRegister TRegister;  //(15 bits) --> [t]: Temporary VRAM address. Address of the first tile (top left) that appears on the screen
+    Register8 XRegister;        //(3 bits)  --> [x]: Fine X scroll
+    Byte latch;                 //(1 bit)   --> [w]: Address latch shared by PPUADDR and PPUSCROLL
 
     Register8 internalBuffer;
 
-    Byte NESPallette [64][4] =
+    Byte systemPallette [64][4] =
     {
         {84,84,84,255},   {0,30,116,255},   {8,16,144,255},   {48,0,136,255},   {68,0,100,255},   {92,0,48,255},    {84,4,0,255},     {60,24,0,255},    {32,42,0,255},    {8,58,0,255},     {0,64,0,255},     {0,60,0,255},     {0,50,60,255},    {0,0,0,0},        {0,0,0,0},{0,0,0,0},
         {152,150,152,255},{8,76,196,255},   {48,50,236,255},  {92,30,228,255},  {136,20,176,255}, {160,20,100,255}, {152,34,32,255},  {120,60,0,255},   {84,90,0,255},    {40,114,0,255},   {8,124,0,255},    {0,118,40,255},   {0,102,120,255},  {0,0,0,0},        {0,0,0,0},{0,0,0,0},
@@ -90,7 +89,7 @@ private:
 
     //Background Rendering
     Byte patternIndex;
-    Byte tileAttribute;
+    Byte attributeByte;
     Byte patternLSB;
     Byte patternMSB;
 
@@ -126,7 +125,7 @@ private:
 
     //Render
     void loadPixel(Byte colorIndex);
-    bool renderEnabled(){return PPUMASK.renderBackground || PPUMASK.renderSprites;};
+    bool renderEnabled(){return maskRegister.renderBackground || maskRegister.renderSprites;};
     Byte getNESPaletteColor(int paletteIndex, Byte backgroundColorId, bool spritePalette);
 
     //Background

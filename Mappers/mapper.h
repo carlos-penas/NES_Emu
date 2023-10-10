@@ -1,7 +1,6 @@
 #ifndef MAPPER_H
 #define MAPPER_H
 #include <vector>
-#include "../compilationSettings.h"
 
 #include "../types.h"
 

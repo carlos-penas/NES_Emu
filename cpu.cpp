@@ -2,7 +2,6 @@
 #include "cpuOpCodes.h"
 #include "utils.h"
 #include "stdio.h"
-#include "compilationSettings.h"
 
 CPU::CPU(Bus *bus)
 {
@@ -27,7 +26,8 @@ void CPU::run()
             HLT =true;
         executeCycle();
     }
-    printf("\nHalting the system...\n\n");
+
+    printf("\nDeteniendo el sistema...\n\n");
     printf("NES TEST RESULTS: %02X %02X\n", memoryRead(0x02), memoryRead(0x03));
 
     printf("Vectors: %02X, %02X, %02X, %02X\n",memoryRead(0xFFFC),memoryRead(0xFFFD),memoryRead(0xFFFE),memoryRead(0xFFFF));
@@ -101,14 +101,14 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         ORA(memoryRead(address));
         break;
     }
     case 0x03:
     {
         //Illegal: SLO_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         SLO(address);
         break;
     }
@@ -120,20 +120,20 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ORA(memoryRead(address));
         break;
     }
     case opCodes::ASL_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ASL(address);
         break;
     }
     case 0x07:
     {
         //Illegal SLO_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         SLO(address);
         break;
     }
@@ -144,7 +144,7 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_I:
     {
-        ORA(currentInstruction.Data1);
+        ORA(currentInstruction.Byte2);
         break;
     }
     case opCodes::ASL_A:
@@ -162,16 +162,16 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ORA(memoryRead(address));
         break;
     }
     case opCodes::ASL_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ASL(address);
         break;
@@ -179,8 +179,8 @@ void CPU::executeInstruction()
     case 0x0F:
     {
         //Illegal: SLO_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         SLO(address);
         break;
@@ -192,14 +192,14 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         ORA(memoryRead(address));
         break;
     }
     case 0x13:
     {
         //Illegal: SLO_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         SLO(address);
         break;
     }
@@ -211,20 +211,20 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ORA(memoryRead(address));
         break;
     }
     case opCodes::ASL_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ASL(address);
         break;
     }
     case 0x17:
     {
         //Illegal: SLO_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         SLO(address);
         break;
     }
@@ -235,8 +235,8 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         ORA(memoryRead(address));
         break;
@@ -250,8 +250,8 @@ void CPU::executeInstruction()
     case 0x1B:
     {
         //Illegal: SLO_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         SLO(address);
         break;
@@ -264,16 +264,16 @@ void CPU::executeInstruction()
     }
     case opCodes::ORA_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ORA(memoryRead(address));
         break;
     }
     case opCodes::ASL_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ASL(address);
         break;
@@ -281,8 +281,8 @@ void CPU::executeInstruction()
     case 0x1F:
     {
         //Illegal: SLO_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         SLO(address);
         break;
@@ -294,39 +294,39 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         AND(memoryRead(address));
         break;
     }
     case 0x23:
     {
         //Illegal: RLA_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         RLA(address);
         break;
     }
     case opCodes::BIT_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         BIT(memoryRead(address));
         break;
     }
     case opCodes::AND_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         AND(memoryRead(address));
         break;
     }
     case opCodes::ROL_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ROL(address);
         break;
     }
     case 0x27:
     {
         //Illegal: RLA_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         RLA(address);
         break;
     }
@@ -337,7 +337,7 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_I:
     {
-        AND(currentInstruction.Data1);
+        AND(currentInstruction.Byte2);
         break;
     }
     case opCodes::ROL_A:
@@ -349,24 +349,24 @@ void CPU::executeInstruction()
     }
     case opCodes::BIT_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         BIT(memoryRead(address));
         break;
     }
     case opCodes::AND_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address =  Utils::joinBytes(ADH,ADL);
         AND(memoryRead(address));
         break;
     }
     case opCodes::ROL_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ROL(address);
         break;
@@ -374,8 +374,8 @@ void CPU::executeInstruction()
     case 0x2F:
     {
         //Illegal: RLA_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         RLA(address);
         break;
@@ -387,14 +387,14 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         AND(memoryRead(address));
         break;
     }
     case 0x33:
     {
         //Illegal: RLA_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         RLA(address);
         break;
     }
@@ -406,7 +406,7 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_ZP_X:
     {
-        Byte ADL = currentInstruction.Data1;
+        Byte ADL = currentInstruction.Byte2;
         Address address = zeroPageIndexedAddress(ADL,&X);
         Byte value = memoryRead(address);
 
@@ -416,14 +416,14 @@ void CPU::executeInstruction()
     }
     case opCodes::ROL_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ROL(address);
         break;
     }
     case 0x37:
     {
         //Illegal: RLA_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         RLA(address);
         break;
     }
@@ -434,8 +434,8 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         AND(memoryRead(address));
         break;
@@ -449,8 +449,8 @@ void CPU::executeInstruction()
     case 0x3B:
     {
         //Illegal: RLA_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         RLA(address);
         break;
@@ -463,16 +463,16 @@ void CPU::executeInstruction()
     }
     case opCodes::AND_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         AND(memoryRead(address));
         break;
     }
     case opCodes::ROL_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ROL(address);
         break;
@@ -480,8 +480,8 @@ void CPU::executeInstruction()
     case 0x3F:
     {
         //Illegal: RLA_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         RLA(address);
         break;
@@ -493,14 +493,14 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         EOR(memoryRead(address));
         break;
     }
     case 0x43:
     {
         //Illegal: SRE_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         SRE(address);
         break;
     }
@@ -512,20 +512,20 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         EOR(memoryRead(address));
         break;
     }
     case opCodes::LSR_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         LSR(address);
         break;
     }
     case 0x47:
     {
         //Illegal: SRE_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         SRE(address);
         break;
     }
@@ -536,7 +536,7 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_I:
     {
-        EOR(currentInstruction.Data1);
+        EOR(currentInstruction.Byte2);
         break;
     }
     case opCodes::LSR_A:
@@ -548,23 +548,23 @@ void CPU::executeInstruction()
     }
     case opCodes::JMP_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         JMP(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::EOR_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         EOR(memoryRead(address));
         break;
     }
     case opCodes::LSR_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         LSR(address);
         break;
@@ -572,8 +572,8 @@ void CPU::executeInstruction()
     case 0x4F:
     {
         //Illegal: SRE_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         SRE(address);
         break;
@@ -585,14 +585,14 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         EOR(memoryRead(address));
         break;
     }
     case 0x53:
     {
         //Illegal: SRE_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         SRE(address);
         break;
     }
@@ -604,13 +604,13 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         EOR(memoryRead(address));
         break;
     }
     case opCodes::LSR_ZP_X:
     {
-        Byte ADL = currentInstruction.Data1;
+        Byte ADL = currentInstruction.Byte2;
         Address address = zeroPageIndexedAddress(ADL,&X);
         LSR(address);
         break;
@@ -618,14 +618,14 @@ void CPU::executeInstruction()
     case 0x57:
     {
         //Illegal: SRE_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         SRE(address);
         break;
     }
     case opCodes::EOR_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         EOR(memoryRead(address));
         break;
@@ -639,8 +639,8 @@ void CPU::executeInstruction()
     case 0x5B:
     {
         //Illegal: SRE_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         SRE(address);
         break;
@@ -653,16 +653,16 @@ void CPU::executeInstruction()
     }
     case opCodes::EOR_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         EOR(memoryRead(address));
         break;
     }
     case opCodes::LSR_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         LSR(address);
         break;
@@ -670,8 +670,8 @@ void CPU::executeInstruction()
     case 0x5F:
     {
         //Illegal: SRE_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         SRE(address);
         break;
@@ -683,14 +683,14 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         ADC(memoryRead(address));
         break;
     }
     case 0x63:
     {
         //Illegal: RRA_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         RRA(address);
         break;
     }
@@ -702,20 +702,20 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ADC(memoryRead(address));
         break;
     }
     case opCodes::ROR_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ROR(address);
         break;
     }
     case 0x67:
     {
         //Illegal: RRA_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         RRA(address);
         break;
     }
@@ -726,7 +726,7 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_I:
     {
-        ADC(currentInstruction.Data1);
+        ADC(currentInstruction.Byte2);
         break;
     }
     case opCodes::ROR_A:
@@ -739,23 +739,23 @@ void CPU::executeInstruction()
     }
     case opCodes::JMP_I:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         JMP(indirectAddress(ADH,ADL));
         break;
     }
     case opCodes::ADC_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ADC(memoryRead(address));
         break;
     }
     case opCodes::ROR_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ROR(address);
         break;
@@ -763,8 +763,8 @@ void CPU::executeInstruction()
     case 0x6F:
     {
         //Illegal: RRA_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         RRA(address);
         break;
@@ -776,14 +776,14 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         ADC(memoryRead(address));
         break;
     }
     case 0x73:
     {
         //Illegal: RRA_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         RRA(address);
         break;
     }
@@ -801,20 +801,20 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ADC(memoryRead(address));
         break;
     }
     case opCodes::ROR_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ROR(address);
         break;
     }
     case 0x77:
     {
         //Illegal: RRA_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         RRA(address);
         break;
     }
@@ -825,8 +825,8 @@ void CPU::executeInstruction()
     }
     case opCodes::ADC_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         ADC(memoryRead(address));
         break;
@@ -840,24 +840,24 @@ void CPU::executeInstruction()
     case 0x7B:
     {
         //Illegal: RRA_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         RRA(address);
         break;
     }
     case opCodes::ADC_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ADC(memoryRead(address));
         break;
     }
     case opCodes::ROR_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ROR(address);
         break;
@@ -865,8 +865,8 @@ void CPU::executeInstruction()
     case 0x7F:
     {
         //Illegal: RRA_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         RRA(address);
         break;
@@ -879,39 +879,39 @@ void CPU::executeInstruction()
     }
     case opCodes::STA_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         STA(address);
         break;
     }
     case 0x83:
     {
         //Illegal: SAX_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         SAX(address);
         break;
     }
     case opCodes::STY_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         STY(address);
         break;
     }
     case opCodes::STA_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         STA(address);
         break;
     }
     case opCodes::STX_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         STX(address);
         break;
     }
     case 0x87:
     {
         //Illegal: SAX_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         SAX(address);
         break;
     }
@@ -927,30 +927,30 @@ void CPU::executeInstruction()
     }
     case opCodes::STY_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         STY(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::STA_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         STA(Utils::joinBytes(ADH,ADL));
         break;
     }
     case opCodes::STX_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         STX(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0x8F:
     {
         //Illegal: SAX_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         SAX(address);
         break;
@@ -962,32 +962,32 @@ void CPU::executeInstruction()
     }
     case opCodes::STA_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         STA(address);
         break;
     }
     case opCodes::STY_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         STY(address);
         break;
     }
     case opCodes::STA_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         STA(address);
         break;
     }
     case opCodes::STX_ZP_Y:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&Y);
         STX(address);
         break;
     }
     case 0x97:
     {
         //Illegal: SAX_ZP_Y
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&Y);
         SAX(address);
         break;
     }
@@ -998,8 +998,8 @@ void CPU::executeInstruction()
     }
     case opCodes::STA_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         STA(address);
         break;
@@ -1011,57 +1011,57 @@ void CPU::executeInstruction()
     }
     case opCodes::STA_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         STA(address);
         break;
     }
     case opCodes::LDY_I:
     {
-        LDY(currentInstruction.Data1);
+        LDY(currentInstruction.Byte2);
         break;
     }
     case opCodes::LDA_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         LDA(memoryRead(address));
         break;
     }
     case opCodes::LDX_I:
     {
-        LDX(currentInstruction.Data1);
+        LDX(currentInstruction.Byte2);
         break;
     }
     case 0xA3:
     {
         //Illegal: LAX_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         LAX(address);
         break;
     }
     case opCodes::LDY_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         LDY(memoryRead(address));
         break;
     }
     case opCodes::LDA_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         LDA(memoryRead(address));
         break;
     }
     case opCodes::LDX_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         LDX(memoryRead(address));
         break;
     }
     case 0xA7:
     {
         //Illegal: LAX_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         LAX(address);
         break;
     }
@@ -1072,7 +1072,7 @@ void CPU::executeInstruction()
     }
     case opCodes::LDA_I:
     {
-        LDA(currentInstruction.Data1);
+        LDA(currentInstruction.Byte2);
         break;
     }
     case opCodes::TAX:
@@ -1082,24 +1082,24 @@ void CPU::executeInstruction()
     }
     case opCodes::LDY_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         LDY(memoryRead(address));
         break;
     }
     case opCodes::LDA_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         LDA(memoryRead(address));
         break;
     }
     case opCodes::LDX_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         LDX(memoryRead(address));
         break;
@@ -1107,8 +1107,8 @@ void CPU::executeInstruction()
     case 0xAF:
     {
         //Illegal: LAX_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         LAX(address);
         break;
@@ -1120,39 +1120,39 @@ void CPU::executeInstruction()
     }
     case opCodes::LDA_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         LDA(memoryRead(address));
         break;
     }
     case 0xB3:
     {
         //Illegal: LAX_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         LAX(address);
         break;
     }
     case opCodes::LDY_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         LDY(memoryRead(address));
         break;
     }
     case opCodes::LDA_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         LDA(memoryRead(address));
         break;
     }
     case opCodes::LDX_ZP_Y:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&Y);
         LDX(memoryRead(address));
         break;
     }
     case 0xB7:
     {
         //Illegal: LAX_ZP_Y
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&Y);
         LAX(address);
         break;
     }
@@ -1163,8 +1163,8 @@ void CPU::executeInstruction()
     }
     case opCodes::LDA_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         LDA(memoryRead(address));
         break;
@@ -1176,24 +1176,24 @@ void CPU::executeInstruction()
     }
     case opCodes::LDY_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         LDY(memoryRead(address));
         break;
     }
     case opCodes::LDA_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         LDA(memoryRead(address));
         break;
     }
     case opCodes::LDX_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         LDX(memoryRead(address));
         break;
@@ -1201,52 +1201,52 @@ void CPU::executeInstruction()
     case 0xBF:
     {
         //Illegal: LAX_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         LAX(address);
         break;
     }
     case opCodes::CPY_I:
     {
-        CPY(currentInstruction.Data1);
+        CPY(currentInstruction.Byte2);
         break;
     }
     case opCodes::CMP_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         CMP(memoryRead(address));
         break;
     }
     case 0xC3:
     {
         //Illegal: DCP_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         DCP(address);
         break;
     }
     case opCodes::CPY_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         CPY(memoryRead(address));
         break;
     }
     case opCodes::CMP_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         CMP(memoryRead(address));
         break;
     }
     case opCodes::DEC_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         DEC(address);
         break;
     }
     case 0xC7:
     {
         //Illegal: DCP_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         DCP(address);
         break;
     }
@@ -1257,7 +1257,7 @@ void CPU::executeInstruction()
     }
     case opCodes::CMP_I:
     {
-        CMP(currentInstruction.Data1);
+        CMP(currentInstruction.Byte2);
         break;
     }
     case opCodes::DEX:
@@ -1267,32 +1267,32 @@ void CPU::executeInstruction()
     }
     case opCodes::CPY_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         CPY(memoryRead(address));
         break;
     }
     case opCodes::CMP_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         CMP(memoryRead(address));
         break;
     }
     case opCodes::DEC_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         DEC(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0xCF:
     {
         //Illegal: DCP_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         DCP(address);
         break;
@@ -1304,14 +1304,14 @@ void CPU::executeInstruction()
     }
     case opCodes::CMP_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         CMP(memoryRead(address));
         break;
     }
     case 0xD3:
     {
         //Illegal: DCP_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         DCP(address);
         break;
     }
@@ -1323,20 +1323,20 @@ void CPU::executeInstruction()
     }
     case opCodes::CMP_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         CMP(memoryRead(address));
         break;
     }
     case opCodes::DEC_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         DEC(address);
         break;
     }
     case 0xD7:
     {
         //Illegal: DCP_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         DCP(address);
         break;
     }
@@ -1347,8 +1347,8 @@ void CPU::executeInstruction()
     }
     case opCodes::CMP_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         CMP(memoryRead(address));
         break;
@@ -1356,8 +1356,8 @@ void CPU::executeInstruction()
     case 0xDB:
     {
         //Illegal: DCP_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         DCP(address);
         break;
@@ -1376,16 +1376,16 @@ void CPU::executeInstruction()
     }
     case opCodes::CMP_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         CMP(memoryRead(address));
         break;
     }
     case opCodes::DEC_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         DEC(address);
         break;
@@ -1393,52 +1393,52 @@ void CPU::executeInstruction()
     case 0xDF:
     {
         //Illegal: DCP_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         DCP(address);
         break;
     }
     case opCodes::CPX_I:
     {
-        CPX(currentInstruction.Data1);
+        CPX(currentInstruction.Byte2);
         break;
     }
     case opCodes::SBC_IX:
     {
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         SBC(memoryRead(address));
         break;
     }
     case 0xE3:
     {
         //Illegal: ISC_IX
-        Address address = indexedIndirectAddress(currentInstruction.Data1,&X);
+        Address address = indexedIndirectAddress(currentInstruction.Byte2,&X);
         ISC(address);
         break;
     }
     case opCodes::CPX_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         CPX(memoryRead(address));
         break;
     }
     case opCodes::SBC_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         SBC(memoryRead(address));
         break;
     }
     case opCodes::INC_ZP:
     {
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         INC(address);
         break;
     }
     case 0xE7:
     {
         //Illegal: ISC_ZP
-        Address address = zeroPageAddress(currentInstruction.Data1);
+        Address address = zeroPageAddress(currentInstruction.Byte2);
         ISC(address);
         break;
     }
@@ -1449,7 +1449,7 @@ void CPU::executeInstruction()
     }
     case opCodes::SBC_I:
     {
-        SBC(currentInstruction.Data1);
+        SBC(currentInstruction.Byte2);
         break;
     }
     case opCodes::NOP:
@@ -1460,37 +1460,37 @@ void CPU::executeInstruction()
     case 0xEB:
     {
         //Illegal: SBC_I
-        SBC(currentInstruction.Data1);
+        SBC(currentInstruction.Byte2);
         break;
     }
     case opCodes::CPX_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         CPX(memoryRead(address));
         break;
     }
     case opCodes::SBC_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         SBC(memoryRead(address));
         break;
     }
     case opCodes::INC_ABS:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         INC(Utils::joinBytes(ADH,ADL));
         break;
     }
     case 0xEF:
     {
         //Illegal: ISC_ABS
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = Utils::joinBytes(ADH,ADL);
         ISC(address);
         break;
@@ -1502,14 +1502,14 @@ void CPU::executeInstruction()
     }
     case opCodes::SBC_IY:
     {
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         SBC(memoryRead(address));
         break;
     }
     case 0xF3:
     {
         //Illegal: ISC_IY
-        Address address = indirectIndexedAddress(currentInstruction.Data1,&Y);
+        Address address = indirectIndexedAddress(currentInstruction.Byte2,&Y);
         ISC(address);
         break;
     }
@@ -1521,20 +1521,20 @@ void CPU::executeInstruction()
     }
     case opCodes::SBC_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         SBC(memoryRead(address));
         break;
     }
     case opCodes::INC_ZP_X:
     {
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         INC(address);
         break;
     }
     case 0xF7:
     {
         //Illegal: ISC_ZP_X
-        Address address = zeroPageIndexedAddress(currentInstruction.Data1,&X);
+        Address address = zeroPageIndexedAddress(currentInstruction.Byte2,&X);
         ISC(address);
         break;
     }
@@ -1545,8 +1545,8 @@ void CPU::executeInstruction()
     }
     case opCodes::SBC_ABS_Y:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         SBC(memoryRead(address));
         break;
@@ -1560,8 +1560,8 @@ void CPU::executeInstruction()
     case 0xFB:
     {
         //Illegal ISC_ABS_Y
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&Y);
         ISC(address);
         break;
@@ -1574,16 +1574,16 @@ void CPU::executeInstruction()
     }
     case opCodes::SBC_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         SBC(memoryRead(address));
         break;
     }
     case opCodes::INC_ABS_X:
     {
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         INC(address);
         break;
@@ -1591,8 +1591,8 @@ void CPU::executeInstruction()
     case 0xFF:
     {
         //Illegal: ISC_ABS_X
-        Byte ADL = currentInstruction.Data1;
-        Byte ADH = currentInstruction.Data2;
+        Byte ADL = currentInstruction.Byte2;
+        Byte ADH = currentInstruction.Byte3;
         Address address = absoluteIndexedAddress(ADH,ADL,&X);
         ISC(address);
         break;
@@ -2951,8 +2951,8 @@ string CPU::stringCPUState()
     string cpuState;
     string sPC = Utils::hexString16(pc);
     string sOpCode = Utils::hexString(currentInstruction.OpCode);
-    string sData1 = Utils::hexString(currentInstruction.Data1);
-    string sData2 = Utils::hexString(currentInstruction.Data2);
+    string sData1 = Utils::hexString(currentInstruction.Byte2);
+    string sData2 = Utils::hexString(currentInstruction.Byte3);
     string sA = Utils::hexString(A);
     string sX = Utils::hexString(X);
     string sY = Utils::hexString(Y);
@@ -2992,12 +2992,12 @@ string CPU::formatName(string instructionName)
     if(currentInstruction.Bytes == 2)
     {
         s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
-        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Data1) + "]" + s.str();
+        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Byte2) + "]" + s.str();
     }
     else
     {
         s << setfill(' ') << setw(21 - instructionName.length() - 1 - 2*(currentInstruction.Bytes-1) - 2) << "";
-        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Data2) + Utils::hexString(currentInstruction.Data1) + "]" + s.str();
+        return "[" + instructionName + " $" + Utils::hexString(currentInstruction.Byte3) + Utils::hexString(currentInstruction.Byte2) + "]" + s.str();
     }
 }
 
@@ -3407,7 +3407,7 @@ void CPU::BCC()
 {
     if(!C_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3416,7 +3416,7 @@ void CPU::BCS()
 {
     if(C_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3425,7 +3425,7 @@ void CPU::BEQ()
 {
     if(Z_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3444,7 +3444,7 @@ void CPU::BMI()
 {
     if(N_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3453,7 +3453,7 @@ void CPU::BNE()
 {
     if(!Z_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3462,7 +3462,7 @@ void CPU::BPL()
 {
     if(!N_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3482,7 +3482,7 @@ void CPU::BVC()
 {
     if(!V_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3491,7 +3491,7 @@ void CPU::BVS()
 {
     if(V_FlagSet())
     {
-        Address newAddress = relativeAddress(currentInstruction.Data1);
+        Address newAddress = relativeAddress(currentInstruction.Byte2);
         pc = newAddress;
     }
 }
@@ -3589,8 +3589,8 @@ void CPU::JMP(Address address)
 
 void CPU::JSR()
 {
-    Byte ADL = currentInstruction.Data1;
-    Byte ADH = currentInstruction.Data2;
+    Byte ADL = currentInstruction.Byte2;
+    Byte ADH = currentInstruction.Byte3;
 
     pc +=2;
 

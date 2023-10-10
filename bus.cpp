@@ -1,10 +1,10 @@
 #include "bus.h"
 #include "stdio.h"
 #include <cstring>
-#include "compilationSettings.h"
+
 #ifdef RENDER_SCREEN
     #include "SFML/Window.hpp"
-#endif
+#endif // RENDER_SCREEN
 
 Bus::Bus()
 {

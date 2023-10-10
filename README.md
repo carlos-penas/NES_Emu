@@ -1,5 +1,5 @@
 # NES Emulator
-An emulator for the videogame console NES (Nintendo Entertainment System) developed in C++ and the graphics library SFML, originally developed as the final project of my software engineering degree.
+An emulator for the videogame console NES (*Nintendo Entertainment System*) developed in C++ and the graphics library SFML, originally developed as the final project of my software engineering degree.
 
 The emulator currently supports Mapper 0 and NTSC video system, which means it is compatible with ~100 different videogames of the NES catalogue.
 

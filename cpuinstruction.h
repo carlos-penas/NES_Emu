@@ -12,8 +12,8 @@ public:
     CPUInstruction(Byte opCode, Byte data1, Byte data2, int cycles, bool isJumpInstruction, std::string name);
 
     Byte OpCode;
-    Byte Data1;
-    Byte Data2;
+    Byte Byte2;
+    Byte Byte3;
 
     int Cycles;
     int Bytes;
